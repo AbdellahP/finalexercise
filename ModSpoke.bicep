@@ -28,9 +28,12 @@ param nsgASPname string
 param nsgSQLname string
 param nsgStname string
 
+param paralogAnalytics string
+
+param DepartmentNameTag string
+
 //----not used----
-param paraVnetCore string
-param paraVnetHub string
+
 
 //output parameters for DNS zone name
 param paraAspPrivateDnsZoneName string
@@ -297,12 +300,14 @@ resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2022-09-01
 
 resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
   parent: blobServices
-  name: 'container1'
+  name: paracontainerName
   properties: {
     publicAccess: 'None'
     metadata: {}
   }
 }
+
+
 
 resource StprivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
   name: paraStprivateEndpointName
@@ -390,4 +395,39 @@ resource KvPrivateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkL
   }
 }
 
+//----------------- Tags --------------------------
+
+resource aspTag 'Microsoft.Resources/tags@2022-09-01' = {
+  name: 'default'
+  scope: appServicePlan
+  properties: {
+    tags: {
+      Dept: DepartmentNameTag
+      
+    }
+  }
+}
+
+resource StAccountTag 'Microsoft.Resources/tags@2022-09-01' = {
+  name: 'default'
+  scope: storageAccount
+  properties: {
+    tags: {
+      Dept: DepartmentNameTag
+      
+    }
+  }
+}
+
+resource SqlServerTag 'Microsoft.Resources/tags@2022-09-01' = {
+  name: 'default'
+  scope: sqlServer
+  properties: {
+    tags: {
+      Dept: DepartmentNameTag
+      
+    }
+  }
+}
 output Prodfqdn string = appService.properties.defaultHostName
+output outStAccountEP string = storageAccount.properties.primaryEndpoints.blob

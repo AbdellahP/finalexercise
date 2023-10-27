@@ -85,7 +85,7 @@ resource pipAzureBastion 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
 
 
 resource bastionInstance 'Microsoft.Network/bastionHosts@2023-04-01' = {
-  name: 'bastion-hubVnet'
+  name: 'bas-hub-${paralocation}-001'
   location: paralocation
   sku: {
     name:'Basic'
@@ -203,7 +203,7 @@ resource firewallPolicy 'Microsoft.Network/firewallPolicies@2023-04-01' = {
 }
 
 resource firewall 'Microsoft.Network/azureFirewalls@2023-04-01' = {
-  name: 'afw-hub${paralocation}-001'
+  name: 'afw-hub-${paralocation}-001'
   location: paralocation
   properties: {
     sku: {
@@ -251,131 +251,10 @@ resource firewallDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-p
 }
 
 
-//------------ Application gateway ------------------------
-// resource pipAppGw 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
-//   name: pipAppGwName
-//   location: paralocation
-//   sku: {
-//     name: 'Standard'
-//   }
-//   properties: {
-//     publicIPAllocationMethod: 'Static'
-//     publicIPAddressVersion: 'IPv4'
-//   }
-// }
 
 
-// resource ApplicationGateway 'Microsoft.Network/applicationGateways@2023-05-01' = {
-//   name: paraAppGWName
-//   location: paralocation
-//   properties: {
-//     sku: {
-//       name: 'Standard_v2'
-//       tier: 'Standard_v2'
-//     }
 
-//     gatewayIPConfigurations: [
-//       {
-//         name: 'appGatewayIpConfig'
-//         properties: {
-//           subnet: {
-//             id: vnethub::AppgwSubnet.id
-//           }
-//         }
-//       }
-//     ]
-//     frontendIPConfigurations: [
-//       { 
-//         name: 'apgw-FrontendIp'
-//         properties: {
-//           privateIPAllocationMethod: 'Dynamic'
-//           publicIPAddress: {
-//             id: pipAppGw.id
-//           }
-//         }
-//       }
-//     ]
-//     frontendPorts: [ 
-//       {
-//         name: 'port_80'
-//         properties: {
-//           port: 80
-//         }
 
-//       }
-//     ]
-//     backendAddressPools:[
-//       {
-//         name: 'myBackendPool'
-//         properties:{
-//           backendAddresses: [
-//             {
-//               fqdn: 'privatelinkprod.azurewebsites.net'
-//             }
-//           ]
-//         }
-//       }
-//     ]
-
-//     backendHttpSettingsCollection:[
-//       {
-//         name: 'myHTTPSettings'
-//         properties: {
-//           port: 80
-//           protocol: 'Http'
-//           cookieBasedAffinity: 'Disabled'
-//           pickHostNameFromBackendAddress:  false
-//           requestTimeout: 20
-//         }
-//       }
-//     ]
-    
-
-//     httpListeners: [
-//       {
-//         name: 'myListener'
-//         properties: {
-//           frontendIPConfiguration:{
-//             id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', paraAppGWName , 'apgw-FrontendIp')
-//           }
-//           frontendPort: {
-//             id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', paraAppGWName, 'port_80')
-//           }
-
-//           protocol: 'Http'
-//           sslCertificate: null
-//           requireServerNameIndication: false
-        
-//         }
-//       }
-//     ]
-//     requestRoutingRules: [
-//       {
-//         name: 'myRoutingRule'
-//         properties: {
-//           ruleType: 'Basic'
-//           priority: 100
-//           httpListener:{
-//             id: resourceId('Microsoft.Network/applicationGateways/httpListeners', paraAppGWName, 'myListener')
-//           }
-//           backendAddressPool:{
-//             id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', paraAppGWName, 'myBackendPool')
-//           }
-//           backendHttpSettings: {
-//             id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', paraAppGWName, 'myHTTPSettings')
-//           }
-//         }
-//       }
-//     ]
-//     enableHttp2: false
-//     autoscaleConfiguration: {
-//       minCapacity: 0
-//       maxCapacity: 10
-//     }
-
-//   }
-
-// }
 
 
 // ------------- Hub Gateway Tested and works--------------------
@@ -399,8 +278,8 @@ resource firewallDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-p
 //   location: paralocation
 //   properties: {
 //     sku: {
-//       name: 'VpnGw2AZ'
-//       tier: 'VpnGw2AZ'
+//       name: 'VpnGw1'
+//       tier: 'VpnGw1'
 
 //     }
 //     gatewayType: 'Vpn'

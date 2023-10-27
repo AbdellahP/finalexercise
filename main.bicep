@@ -11,7 +11,7 @@ param KVname string
 
 var  varSQLPrivateDnsZoneName = 'privatelink${environment().suffixes.sqlServerHostname}'
 
-var varStPrivateDnsZoneName = 'privatelink${environment().suffixes.storage}'
+var varStPrivateDnsZoneName = 'privatelink.blob.${environment().suffixes.storage}'
 
 var varKvPrivateDnsZoneName = 'privatelink${environment().suffixes.keyvaultDns}'
 
@@ -72,8 +72,7 @@ module ModDevSpoke 'ModSpoke.bicep' = {
     nsgStname: 'nsg-St-dev'
 
     paraRtToFw: ModRouteTable.outputs.outRT
-    paraVnetCore: ModVnetCore.outputs.vnetCore
-    paraVnetHub: Modhubvnet.outputs.outVnetHub
+    
     paraAspPrivateDnsZoneName: ModDNSZone.outputs.outaspPrivateDnsZoneName
     paraSQLprivateDnsZoneName: ModDNSZone.outputs.outSQLprivateDnsZoneName
     paraStprivateDnsZoneName: ModDNSZone.outputs.outStprivateDnsZoneName
@@ -82,8 +81,10 @@ module ModDevSpoke 'ModSpoke.bicep' = {
     paraSQLprivateDnsZoneID: ModDNSZone.outputs.outSQLprivateDnsZoneID
     paraStprivateDnsZoneID: ModDNSZone.outputs.outStprivateDnsZoneID
     paraKVprivateDnsZoneID: ModDNSZone.outputs.outKVprivateDnsZoneID
-    paracontainerName:''
-  
+    paracontainerName: 'container1'
+    paralogAnalytics: ModLogAnalytics.outputs.outLogAnalytics
+    DepartmentNameTag: 'Dev'
+
     
 
   }
@@ -122,8 +123,7 @@ module ModProdSpoke 'ModSpoke.bicep' = {
     nsgStname: 'nsg-St-prod'
 
     paraRtToFw: ModRouteTable.outputs.outRT
-    paraVnetCore: ModVnetCore.outputs.vnetCore
-    paraVnetHub: Modhubvnet.outputs.outVnetHub
+
     paraAspPrivateDnsZoneName: ModDNSZone.outputs.outaspPrivateDnsZoneName
     paraSQLprivateDnsZoneName: ModDNSZone.outputs.outSQLprivateDnsZoneName
     paraStprivateDnsZoneName: ModDNSZone.outputs.outStprivateDnsZoneName
@@ -132,7 +132,9 @@ module ModProdSpoke 'ModSpoke.bicep' = {
     paraSQLprivateDnsZoneID: ModDNSZone.outputs.outSQLprivateDnsZoneID
     paraStprivateDnsZoneID: ModDNSZone.outputs.outStprivateDnsZoneID
     paraKVprivateDnsZoneID: ModDNSZone.outputs.outKVprivateDnsZoneID
-    paracontainerName:''
+    paracontainerName:'container1'
+    paralogAnalytics: ModLogAnalytics.outputs.outLogAnalytics
+    DepartmentNameTag: 'Prod'
   }
   
 }
@@ -148,6 +150,7 @@ module ModVnetCore 'ModCore.bicep' = {
     paravmName: 'vm1core001'
     paraTenantID: subscription().tenantId
     paraKVCoreObjectID: KVObjectID
+    storageUri: ModProdSpoke.outputs.outStAccountEP
     paraAspPrivateDnsZoneName: ModDNSZone.outputs.outaspPrivateDnsZoneName
     paraSQLprivateDnsZoneName: ModDNSZone.outputs.outSQLprivateDnsZoneName
     paraStprivateDnsZoneName: ModDNSZone.outputs.outStprivateDnsZoneName
@@ -157,9 +160,13 @@ module ModVnetCore 'ModCore.bicep' = {
     paraKVprivateDnsZoneID: ModDNSZone.outputs.outKVprivateDnsZoneID
 
     paraKVprivateEndpointName: 'private-endpoint-KV-core'
+
+    paralogAnalytics: ModLogAnalytics.outputs.outLogAnalytics
+    
     
 
   }
+  
   
 }
 
@@ -190,7 +197,7 @@ module ModLogAnalytics 'ModLogAnalyticsWorkSpace.bicep' = {
   name: 'ModLogAnalytics'
   params: {
     paralocation: location
-    paralogAnalyticsName: 'log-core-${location}'
+    paralogAnalyticsName: 'log-core-${location}-001'
   }
 }
 
@@ -219,7 +226,18 @@ module ModDNSZone 'ModDNSZone.bicep' = {
   }
 }
 
+module ModRSV 'ModRSV.bicep' = {
+  name: 'ModRSV'
+  params: { 
+    paralocation: location
+    paraVaultName: 'rsv-core-${location}-001'
+    paraScheduleRunTimes: '2023-10-27T12:30:00Z'
+    paraPolicyName: 'DeafultPolicy'
+    paraVMName: ModVnetCore.outputs.outVMname
+    paraVMId: ModVnetCore.outputs.outVmId
 
+  }
+}
 
 
 

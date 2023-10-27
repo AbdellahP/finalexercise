@@ -6,26 +6,26 @@ $lowerCaseSet=(97..122) | foreach{[char]$_}
 $numericset=(48..57) | foreach{[char]$_}
 $specialSet=(33,35,36,37,38,42,63) | foreach{[char]$_}
 
-$CharSet=$upperCaseSet+$lowerCaseSet+$numericset+$specialSet
+# $CharSet=$upperCaseSet+$lowerCaseSet+$numericset+$specialSet
 $CharSet1=$upperCaseSet+$lowerCaseSet+$numericset
 
 
 
 #----------- Vm -------------
-$vmUserName=-join($CharSet1 | Get-Random -Count 20 )
-$vmUserPassword=-join($CharSet | Get-Random -Count 15)
+$vmUserName=-join($CharSet1 | Get-Random -Count 15 )
+$vmUserPassword=-join($CharSet1 | Get-Random -Count 15)
 
 
 #---------------- SQL DEV -----------------------
 
-$sqldevUserName=-join($CharSet1 | Get-Random -Count 20)
-$sqldevUserPassword=-join($CharSet | Get-Random -Count 15)
+$sqldevUserName=-join($CharSet1 | Get-Random -Count 15)
+$sqldevUserPassword=-join($CharSet1 | Get-Random -Count 15)
 
 
 # ---------------- SQL Prod -----------------
 
-$sqlprodUserName=-join($CharSet1 | Get-Random -Count 20)
-$sqlprodUserPassword=-join($CharSet | Get-Random -Count 15)
+$sqlprodUserName=-join($CharSet1 | Get-Random -Count 15)
+$sqlprodUserPassword=-join($CharSet1 | Get-Random -Count 15)
 
 
 $location = Get-AzResourceGroup | select-object -ExpandProperty Location
@@ -35,6 +35,8 @@ $Random = Get-Random -Minimum 150 -Maximum 2222
 $KVName = "kv-secert-core-"+$Random
 
 $resourcegroup = Get-AzResourceGroup | Select-Object -ExpandProperty ResourceGroupName
+
+$KVObjectID = Get-AzADUser -SignedIn | Select-Object -ExpandProperty Id
 
 
 
@@ -69,7 +71,7 @@ Set-AzKeyVaultSecret -VaultName $KVName -Name "SqlprodUserPassword" -SecretValue
 
 #-------------------
 
-$KVObjectID = Get-AzADUser -SignedIn | Select-Object -ExpandProperty Id
+
 
 
 #-----------------------Run Bicep file-------------------

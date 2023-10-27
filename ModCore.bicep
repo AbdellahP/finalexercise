@@ -20,6 +20,10 @@ param paraSQLprivateDnsZoneName string
 param paraStprivateDnsZoneName string
 param paraKVprivateDnsZoneName string
 
+param storageUri string
+
+param paralogAnalytics string
+
 // ----------- Virtual Network Core --------------
 resource vnetCore 'Microsoft.Network/virtualNetworks@2023-04-01' = {
   name: 'vnet-Core'
@@ -115,17 +119,15 @@ resource windowsVM 'Microsoft.Compute/virtualMachines@2020-12-01' = {
         version: 'latest'
       }
       osDisk: {
-        name: 'Disk'
-        createOption:'FromImage'
-        caching: 'ReadOnly'
-        
+        createOption: 'FromImage'
+        managedDisk: {
+          storageAccountType: 'Premium_LRS'
+        }
+
         
       }
 
-      
-
     }
-
     networkProfile: {
       networkInterfaces: [
        {
@@ -135,15 +137,40 @@ resource windowsVM 'Microsoft.Compute/virtualMachines@2020-12-01' = {
       ]
       
     }
+    diagnosticsProfile:{
+      bootDiagnostics:{
+        enabled: true
+        storageUri: storageUri
+      }
+    }
     
   }
 }
 
-//------------ antoMalwareExtension ----------
+// resource vmDiagonstics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+//   name: 'diagonstics-VM'
+//   scope: windowsVM
+//   properties: {
+//     workspaceId: paralogAnalytics
+//     logs: [ 
+//       { 
+//         categoryGroup: 'allLogs'
+//         enabled: true
+//       }
+//     ]
+//     metrics: [
+//       {
+//         category: 'AllMetrics'
+//         enabled: true
+//       }
+//     ]
+//   }
+// }
+//------------ antiMalwareExtension ----------
 
 resource antiMalwareExtension 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = {
   parent: windowsVM
-  name: 'antiMalwareExtension'
+  name: 'AntiMalwareExtension'
   location: paralocation
   properties: {
     publisher: 'Microsoft.Azure.Security'
@@ -156,11 +183,23 @@ resource antiMalwareExtension 'Microsoft.Compute/virtualMachines/extensions@2023
 
   }
 }
+//-- 
 
+resource dependencyAgentExtension 'Microsoft.Compute/virtualMachines/extensions@2022-08-01' ={
+  parent: windowsVM 
+  name: 'DependencyAgentWindows'
+  location: paralocation
+  properties: {
+    publisher: 'Microsoft.Azure.Monitoring.DependencyAgent'
+    type: 'DependencyAgentWindows'
+    typeHandlerVersion: '9.10'
+    autoUpgradeMinorVersion: true
+  }
+}
 //----------- AMA Agent Extension -----------
 
 
-resource windowsAgent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' = {
+resource windowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = {
   parent: windowsVM
   name: 'AzureMonitorWindowsAgent'
   location: paralocation
@@ -170,9 +209,56 @@ resource windowsAgent 'Microsoft.Compute/virtualMachines/extensions@2021-11-01' 
     typeHandlerVersion: '1.0'
     autoUpgradeMinorVersion: true
     enableAutomaticUpgrade: true
+    settings: {
+      workspaceId: paralogAnalytics
+      azureResourceId: windowsVM.id
+      stopOnMultipleConnections: true
+    }
+
+    protectedSettings: {
+      workspaceKey: listkeys(paralogAnalytics, '2022-10-01').primarySharedKey
+    }
   }
 }
+
+//--------------
+
+// resource agentExtension 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = {
+//   parent: windowsVM
+//   name: 'AzureMonitorAgent'
+//   location: paralocation
+//   properties: {
+//     publisher: 'Microsoft.Azure.Monitor'
+//     type: 'AzureMonitorAgent'
+//     typeHandlerVersion: 'latest'
+//   }
+// }
+
+
+// ------------- DiskEncryption Extension --------
+
+resource DiskEncryption 'Microsoft.Compute/virtualMachines/extensions@2020-06-01' = {
+  parent: windowsVM
+  name: 'AzureDiskEncryption'
+  location: paralocation
+  properties: {
+    publisher: 'Microsoft.Azure.Security'
+    type: 'AzureDiskEncryption'
+    typeHandlerVersion: '2.2'
+    autoUpgradeMinorVersion: true
+    forceUpdateTag: '1.0'
+    settings: {
+      EncryptionOperation: 'EnableEncryption'
+      KeyVaultURL: reskv.properties.vaultUri
+      KeyVaultResourceId: reskv.id
+      VolumeType: 'All'
+      ResizeOSDisk: false
+    }
+  }
+
+} 
 // --------------- Key Vault ----------------
+
 
 resource nsgKVcore'Microsoft.Network/networkSecurityGroups@2019-11-01' = {
   name: 'nsg-kv-core'
@@ -197,11 +283,10 @@ resource reskv 'Microsoft.KeyVault/vaults@2021-11-01-preview' = {
         tenantId: paraTenantID
         permissions: {
           keys: [
-            'get'
+            'all'
           ]
           secrets: [
-            'list'
-            'get'
+            'all'
           ]
         }
       }
@@ -303,7 +388,22 @@ resource KvPrivateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkL
   }
 }
 
+// ------------ Tags -----------
 
+resource VMTags 'Microsoft.Resources/tags@2022-09-01' = {
+  name: 'default'
+  scope: windowsVM
+  properties: {
+    tags: {
+      Owner: 'Abdellah'
+      Dept: 'Prod'
+      Dept2: 'Dev'
+      
+    }
+  }
+}
 
 output vnetCore string = vnetCore.id
-output outresKV string = reskv.id
+output outresKV string = reskv.id 
+output outVMname string = windowsVM.name
+output outVmId string = windowsVM.id
