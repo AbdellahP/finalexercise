@@ -261,48 +261,48 @@ resource firewallDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-p
 // ------------- Hub Gateway Tested and works--------------------
 
 
-// resource pipVpnGateway 'Microsoft.Network/publicIPAddresses@2019-11-01' = {
-//   name: pipVpnGw
-//   location: paralocation
-//   sku: {
-//     name: 'Standard'
-//   }
-//   properties: {
-//     publicIPAllocationMethod: 'Static'
-//     idleTimeoutInMinutes: 4
-//     publicIPAddressVersion: 'IPv4'
+resource pipVpnGateway 'Microsoft.Network/publicIPAddresses@2019-11-01' = {
+  name: pipVpnGw
+  location: paralocation
+  sku: {
+    name: 'Standard'
+  }
+  properties: {
+    publicIPAllocationMethod: 'Static'
+    idleTimeoutInMinutes: 4
+    publicIPAddressVersion: 'IPv4'
    
-//   }
-// }
+  }
+}
 
-// resource vpnGW 'Microsoft.Network/virtualNetworkGateways@2023-05-01' = {
-//   name: paraVpnGwName
-//   location: paralocation
-//   properties: {
-//     sku: {
-//       name: 'VpnGw2AZ'
-//       tier: 'VpnGw2AZ'
+resource vpnGW 'Microsoft.Network/virtualNetworkGateways@2023-05-01' = {
+  name: paraVpnGwName
+  location: paralocation
+  properties: {
+    sku: {
+      name: 'VpnGw2AZ'
+      tier: 'VpnGw2AZ'
 
-//     }
-//     gatewayType: 'Vpn'
-//     vpnType: 'RouteBased'
-//     vpnGatewayGeneration: 'Generation2'
-//     ipConfigurations:[
-//       {
-//         name: 'deafult'
-//         properties: {
-//           privateIPAllocationMethod: 'Dynamic'
-//           publicIPAddress: {
-//             id: pipVpnGateway.id
-//           }
-//           subnet: {
-//             id:vnethub::GatewaySubnet.id
-//           }
-//         }
-//       }
-//     ]
-//   }
-// }
+    }
+    gatewayType: 'Vpn'
+    vpnType: 'RouteBased'
+    vpnGatewayGeneration: 'Generation2'
+    ipConfigurations:[
+      {
+        name: 'deafult'
+        properties: {
+          privateIPAllocationMethod: 'Dynamic'
+          publicIPAddress: {
+            id: pipVpnGateway.id
+          }
+          subnet: {
+            id:vnethub::GatewaySubnet.id
+          }
+        }
+      }
+    ]
+  }
+}
 
 
 
