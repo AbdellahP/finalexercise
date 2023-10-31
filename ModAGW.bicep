@@ -128,3 +128,19 @@ resource ApplicationGateway 'Microsoft.Network/applicationGateways@2023-05-01' =
   }
 
 }
+
+//-------------- Tags---------------
+
+resource AGWTags 'Microsoft.Resources/tags@2022-09-01' = {
+  name: 'default'
+  scope: ApplicationGateway
+  properties: {
+    tags: {
+      Owner: 'Abdellah'
+      Dept: 'Prod'
+      Dept2: 'Dev'
+      
+    }
+  }
+}
+

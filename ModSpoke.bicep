@@ -75,6 +75,9 @@ resource vnetSpoke 'Microsoft.Network/virtualNetworks@2019-11-01' = {
           routeTable:{
             id: paraRtToFw
           }
+          networkSecurityGroup:{
+            id:nsgAppServicePlan.id
+          }
          
         }
         
@@ -85,6 +88,9 @@ resource vnetSpoke 'Microsoft.Network/virtualNetworks@2019-11-01' = {
           addressPrefix: paraSqlSubnetAddressPrefix
           routeTable:{
             id: paraRtToFw
+          }
+          networkSecurityGroup: {
+            id:nsgSql.id
           }
         }
       }
@@ -431,3 +437,7 @@ resource SqlServerTag 'Microsoft.Resources/tags@2022-09-01' = {
 }
 output Prodfqdn string = appService.properties.defaultHostName
 output outStAccountEP string = storageAccount.properties.primaryEndpoints.blob
+
+output outVnetSpokeName string = vnetSpoke.name
+output outVnetSpokeID string= vnetSpoke.id
+

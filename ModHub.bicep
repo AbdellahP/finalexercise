@@ -1,9 +1,10 @@
 param paralocation string 
-// param pipVpnGw string
-// param paraVpnGwName string
+param pipVpnGw string
+param paraVpnGwName string
 // param paraAppGWName string
 // param pipAppGwName string
 param paralogAnalytics string
+
 //output parameters for DNS zone name
 param paraAspPrivateDnsZoneName string
 param paraSQLprivateDnsZoneName string
@@ -268,6 +269,7 @@ resource firewallDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-p
 //   }
 //   properties: {
 //     publicIPAllocationMethod: 'Static'
+//     idleTimeoutInMinutes: 4
 //     publicIPAddressVersion: 'IPv4'
    
 //   }
@@ -278,8 +280,8 @@ resource firewallDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-p
 //   location: paralocation
 //   properties: {
 //     sku: {
-//       name: 'VpnGw1'
-//       tier: 'VpnGw1'
+//       name: 'VpnGw2AZ'
+//       tier: 'VpnGw2AZ'
 
 //     }
 //     gatewayType: 'Vpn'
@@ -352,6 +354,31 @@ resource KvPrivateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkL
   }
 }
 
+//----------------- Tags----------------
+
+resource BastionTags 'Microsoft.Resources/tags@2022-09-01' = {
+  name: 'default'
+  scope: bastionInstance 
+  properties: {
+    tags: {
+      Owner: 'Abdellah'
+   
+      
+    }
+  }
+}
+
+resource AFWTags 'Microsoft.Resources/tags@2022-09-01' = {
+  name: 'default'
+  scope: firewall
+  properties: {
+    tags: {
+      Owner: 'Abdellah'
+      
+      
+    }
+  }
+}
 
 
 
@@ -360,7 +387,8 @@ resource KvPrivateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkL
 
 output outAFWIp string = firewall.properties.ipConfigurations[0].properties.privateIPAddress
 output outAGWSubnet string = vnethub.properties.subnets[3].id
-output outVnetHub string = vnethub.id
+output outVnetHubID string = vnethub.id
+output outVnetHubName string =vnethub.name
 
 
 

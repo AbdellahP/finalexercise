@@ -185,17 +185,7 @@ resource antiMalwareExtension 'Microsoft.Compute/virtualMachines/extensions@2023
 }
 //-- 
 
-resource dependencyAgentExtension 'Microsoft.Compute/virtualMachines/extensions@2022-08-01' ={
-  parent: windowsVM 
-  name: 'DependencyAgentWindows'
-  location: paralocation
-  properties: {
-    publisher: 'Microsoft.Azure.Monitoring.DependencyAgent'
-    type: 'DependencyAgentWindows'
-    typeHandlerVersion: '9.10'
-    autoUpgradeMinorVersion: true
-  }
-}
+
 //----------- AMA Agent Extension -----------
 
 
@@ -257,6 +247,18 @@ resource DiskEncryption 'Microsoft.Compute/virtualMachines/extensions@2020-06-01
   }
 
 } 
+
+resource dependencyAgentExtension 'Microsoft.Compute/virtualMachines/extensions@2022-08-01' ={
+  parent: windowsVM 
+  name: 'DependencyAgentWindows'
+  location: paralocation
+  properties: {
+    publisher: 'Microsoft.Azure.Monitoring.DependencyAgent'
+    type: 'DependencyAgentWindows'
+    typeHandlerVersion: '9.10'
+    autoUpgradeMinorVersion: true
+  }
+}
 // --------------- Key Vault ----------------
 
 
@@ -403,7 +405,23 @@ resource VMTags 'Microsoft.Resources/tags@2022-09-01' = {
   }
 }
 
-output vnetCore string = vnetCore.id
+resource KVTags 'Microsoft.Resources/tags@2022-09-01' = {
+  name: 'default'
+  scope: reskv
+  properties: {
+    tags: {
+      Owner: 'Abdellah'
+      Dept: 'Prod'
+      Dept2: 'Dev'
+      
+    }
+  }
+}
+
+
+output vnetCoreID string = vnetCore.id
 output outresKV string = reskv.id 
 output outVMname string = windowsVM.name
 output outVmId string = windowsVM.id
+
+output vnetCoreName string = vnetCore.name

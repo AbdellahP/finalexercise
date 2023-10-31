@@ -5,6 +5,7 @@ param location string = resourceGroup().location
 
 param KVObjectID string
 param KVname string 
+param RandNumber string
 
 
 
@@ -25,8 +26,8 @@ module Modhubvnet 'ModHub.bicep'= {
   name:'ModhubVnet'
   params: {
     paralocation: location
-    // pipVpnGw: 'pipVpnGw'
-    // paraVpnGwName: 'vgw-hub${location}-001'
+    pipVpnGw: 'pipVpnGw'
+    paraVpnGwName: 'vgw-hub${location}-001'
 
     // paraAppGWName: 'agw-hub${location}-001'
     // pipAppGwName: 'agw-pip'
@@ -55,15 +56,15 @@ module ModDevSpoke 'ModSpoke.bicep' = {
     paraRepositoryUrl: 'https://github.com/Azure-Samples/dotnetcore-docs-hello-world'
 
     nsgASPname: 'nsg-asp-dev'
-    paraAppService: 'as-dev-${location}'
-    paraAppServicePlanName: 'asp-dev-${location}'
+    paraAppService: 'as-dev-${location}-${RandNumber}'
+    paraAppServicePlanName: 'asp-dev-${location}-${RandNumber}'
     paraUserLogin: reskv.getSecret('SqldevUserName')
     paraUserPassword: reskv.getSecret('SqldevUserPassword')
     paraAspPrivateEndpointName: 'private-endpoint-asp-dev'
 
 
     paraSQLprivateEndpointName:'private-endpoint-sqlserver-dev'
-    sqlServerName: 'sql-dev-${location}-001-${uniqueString(resourceGroup().id)}'
+    sqlServerName: 'sql-dev-${location}-001-${RandNumber}'
     nsgSQLname: 'nsg-sql-dev'
 
     parastorageAccountName: 'stdev001${uniqueString(resourceGroup().id)}'
@@ -104,15 +105,15 @@ module ModProdSpoke 'ModSpoke.bicep' = {
     paraRepositoryUrl: 'https://github.com/Azure-Samples/dotnetcore-docs-hello-world'
     
     nsgASPname: 'nsg-asp-prod'
-    paraAppService: 'as-prod-${location}'
-    paraAppServicePlanName: 'asp-prod-${location}'
+    paraAppService: 'as-prod-${RandNumber}'
+    paraAppServicePlanName: 'asp-prod-${location}-${RandNumber}'
     paraUserLogin: reskv.getSecret('SqlprodUserName')
     paraUserPassword: reskv.getSecret('SqlprodUserPassword')
     paraAspPrivateEndpointName:'private-endpoint-asp-prod'
     
 
     paraSQLprivateEndpointName:'private-endpoint-sqlserver-prod'
-    sqlServerName: 'sql-prod-${location}-001-${uniqueString(resourceGroup().id)}'
+    sqlServerName: 'sql-prod-${location}-001-${RandNumber}'
     nsgSQLname: 'nsg-sql-prod'
 
 
@@ -173,6 +174,23 @@ module ModVnetCore 'ModCore.bicep' = {
 module modVnetpeering 'ModVnetpeering.bicep' = {
   name: 'modVnetpeering'
   params:{
+    paraVnetCoreName: ModVnetCore.outputs.vnetCoreName
+    paraVnetHubName: Modhubvnet.outputs.outVnetHubName
+    paraVnetDevSpokeName: ModDevSpoke.outputs.outVnetSpokeName
+    paraVnetProdSpokeName: ModProdSpoke.outputs.outVnetSpokeName
+
+    paraVnetCoreId: ModVnetCore.outputs.vnetCoreID
+    paraVnetHubId: Modhubvnet.outputs.outVnetHubID
+    paraVnetDevSpokeId: ModDevSpoke.outputs.outVnetSpokeID
+    paraVnetProdSpokeId: ModProdSpoke.outputs.outVnetSpokeID
+
+    peerHubtoDevspokeName: 'peer-hub-to-devSpoke'
+    peerDevSpoketoHubName: 'peer-spoke-to-hub'
+    peerHubtoProdSpokeName: 'peer-hub-to-prodspoke'
+    peerProdSpoketoHubName: 'peer-prodspoke-to-hub'
+    peerHubtoCoreName: 'peer-hub-to-core'
+    peerCoretoHubName: 'peer-core-to-hub'
+    
 
   }
   dependsOn: [
@@ -197,7 +215,7 @@ module ModLogAnalytics 'ModLogAnalyticsWorkSpace.bicep' = {
   name: 'ModLogAnalytics'
   params: {
     paralocation: location
-    paralogAnalyticsName: 'log-core-${location}-001'
+    paralogAnalyticsName: 'log-core-${location}-001--${uniqueString(resourceGroup().id)}'
   }
 }
 
@@ -213,6 +231,7 @@ module ModAGW 'ModAGW.bicep'= {
   }
   dependsOn: [
     ModProdSpoke
+    ModVnetCore
   ]
 }
 
