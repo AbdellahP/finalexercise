@@ -35,7 +35,7 @@ $Random = Get-Random -Minimum 150 -Maximum 2222
 
 $KVName = "kv-secert-core-"+$Random
 
-$resourcegroup = 'rg-cohort3-abdellah'
+$resourcegroup = 'rg-abdellah-chohort3'
 
 $location = Get-AzResourceGroup -Name $resourcegroup | select-object -ExpandProperty Location
 

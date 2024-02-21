@@ -168,21 +168,21 @@ resource windowsVM 'Microsoft.Compute/virtualMachines@2020-12-01' = {
 // }
 //------------ antiMalwareExtension ----------
 
-resource antiMalwareExtension 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = {
-  parent: windowsVM
-  name: 'AntiMalwareExtension'
-  location: paralocation
-  properties: {
-    publisher: 'Microsoft.Azure.Security'
-    type: 'IaaSAntimalware'
-    typeHandlerVersion: '1.3'
-    autoUpgradeMinorVersion: true
-    settings: {
-      AntimalwareEnabled: 'true'
-    }
+// resource antiMalwareExtension 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = {
+//   parent: windowsVM
+//   name: 'AntiMalwareExtension'
+//   location: paralocation
+//   properties: {
+//     publisher: 'Microsoft.Azure.Security'
+//     type: 'IaaSAntimalware'
+//     typeHandlerVersion: '1.3'
+//     autoUpgradeMinorVersion: true
+//     settings: {
+//       AntimalwareEnabled: 'true'
+//     }
 
-  }
-}
+//   }
+// }
 //-- 
 
 

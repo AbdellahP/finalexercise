@@ -90,7 +90,7 @@ resource vnetSpoke 'Microsoft.Network/virtualNetworks@2019-11-01' = {
             id: paraRtToFw
           }
           networkSecurityGroup: {
-            id:nsgSql.id
+            id:nsgAppServicePlan.id
           }
         }
       }
@@ -126,7 +126,9 @@ resource vnetSpoke 'Microsoft.Network/virtualNetworks@2019-11-01' = {
 resource nsgAppServicePlan 'Microsoft.Network/networkSecurityGroups@2019-11-01' = {
   name: nsgASPname
   location: paralocation
-  properties: {}
+  properties: {
+    securityRules: []
+  }
 }
 
 
@@ -205,11 +207,11 @@ resource aspEndPointDNSGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
 
 // ----------------------SQL DATABASE ----------------------------
 
-resource nsgSql 'Microsoft.Network/networkSecurityGroups@2019-11-01' = {
-  name: nsgSQLname
-  location: paralocation
-  properties: {}
-}
+// resource nsgSql 'Microsoft.Network/networkSecurityGroups@2019-11-01' = {
+//   name: nsgSQLname
+//   location: paralocation
+//   properties: {}
+// }
 
 
 resource sqlServer 'Microsoft.Sql/servers@2021-11-01' = {
@@ -281,11 +283,11 @@ resource SQLEndPointDNSGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
 
 // --------------------- Storage account --------------------------- 
 
-resource nsgSt 'Microsoft.Network/networkSecurityGroups@2019-11-01' = {
-  name: nsgStname
-  location: paralocation
-  properties: {}
-}
+// resource nsgSt 'Microsoft.Network/networkSecurityGroups@2019-11-01' = {
+//   name: nsgStname
+//   location: paralocation
+//   properties: {}
+// }
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: parastorageAccountName
