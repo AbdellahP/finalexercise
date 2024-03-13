@@ -1,9 +1,7 @@
 using 'newmain.bicep' 
 
 
-param vmuser = 'abztheuser'
-@secure()
-param vmpass  = 'Panic!121212'
+
 param logAnalyticsWorkspacename  = 'logAnalyticsWorkspace'
 
 
@@ -14,6 +12,18 @@ param paraProdVnetaddressprefix = '10.31.0.0/16'
 param paraDevVnetaddressprefix = '10.30.0.0/16'
 
 
+// VM
+param vmName = 'vm-core-uksouth-001'
+
+// RSV
+param recoveryServiceVaultName = 'rsv-core-uksouth-001'
+
+// FIREWALL POLICY and fw
+param firewallRulesName = 'fwRules-hub-001'
+param firewallPolicyName = 'fwPolicy-hub-001'
+param fwName = 'fw-hub-001'
+
+// APP SERVICE PLAN 
 param paraAspSkuCapacity = 1
 param paraAspSkuFamily = 'B'
 param paraAspSkuName = 'B1'

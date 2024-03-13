@@ -1,7 +1,5 @@
 param paralocation string = resourceGroup().location
-param vmuser string 
-@secure()
-param vmpass string
+ 
 param logAnalyticsWorkspacename string 
 param paraAspSkuCapacity int
 param paraAspSkuFamily string
@@ -15,6 +13,45 @@ param paraProdVnetaddressprefix string
 param paraDevVnetaddressprefix string
 param paraRepositoryUrl string
 param paraBranch string
+
+param vmName string
+param firewallRulesName string
+param firewallPolicyName string
+param fwName string
+param recoveryServiceVaultName string
+
+// ---- RandString -------
+
+var RandString=substring(uniqueString(resourceGroup().id),0,3)
+
+// VM ---------
+var vmNICIP = '10.20.1.20'
+var vmSize = 'Standard_D2S_v3'
+
+
+// encryptionKV
+var CoreEncryptKeyVaultName = 'kv-encrypt-core-${RandString}'
+var CoreSecVaultName = 'kv-sec-ap-01'
+
+// sql vars
+
+var prodSQLserverName = 'sql-prod-${paralocation}-001-${RandString}'
+var devSQLserverName  = 'sql-dev-${paralocation}-001-${RandString}'
+var sqladminUsername = 'userabz'
+var sqladminPassword = 'LegendAbz20204!'
+var ProdSQLServerSku = 'Basic'
+var prodSQLDatabaseName = 'sqldb-prod-${paralocation}-001-${RandString}'
+var devSQLDatabaseName = 'sqldb-dev-${paralocation}-001-${RandString}'
+
+// prod st ------
+var StAccountName = 'stprod001${RandString}'
+var prodStPrivateEndpointName = 'private-endpoint-${StAccountName}'
+
+//---- Firewall----
+
+var AzFwPrivateIP = '10.10.3.4'
+
+// privateDNS Vars
 
 var  varSQLPrivateDnsZoneName = 'privatelink${environment().suffixes.sqlServerHostname}'
 
@@ -222,27 +259,38 @@ module bastionHost 'br/public:avm/res/network/bastion-host:0.1.0' = {
   }
 }
 
+// ----- existing KV with pass and user name
+resource coreSecretVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+  name: CoreSecVaultName
+}
 
 // Vm inside core ------------
-
-module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.1.0' = {
-  name: 'vm1core001'
-  params: {
-    // Required parameters
-    adminUsername: vmuser
-    // encryptionAtHost: false
+module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.1' = {
+  name:'VirtualMachineCore'
+  params:{
+    adminUsername:  coreSecretVault.getSecret('VMUsername')
+    adminPassword: coreSecretVault.getSecret('VMAdminPassword')
+    computerName: 'coreComputer'
+    encryptionAtHost:false
     imageReference: {
-      offer: 'WindowsServer'
       publisher: 'MicrosoftWindowsServer'
+      offer: 'WindowsServer'
       sku: '2022-datacenter-azure-edition'
       version: 'latest'
     }
-    name: 'vm1core001'
+    name: vmName
+    location: paralocation
+    backupPolicyName: 'DefaultPolicy'
+    backupVaultName: recoveryServiceVaults.outputs.name
+    backupVaultResourceGroup: recoveryServiceVaults.outputs.resourceGroupName
     nicConfigurations: [
       {
+        deleteOption: 'Delete'
         ipConfigurations: [
           {
-            name: 'ipconfig01'
+            name: 'ipconfig'
+            privateIPAllocationMethod: 'Static' 
+            privateIPAddress: vmNICIP
             subnetResourceId: CorevirtualNetwork.outputs.subnetResourceIds[0]
           }
         ]
@@ -250,38 +298,140 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.1.0' = {
       }
     ]
     osDisk: {
+      name: 'name'
       caching: 'ReadWrite'
       diskSizeGB: '128'
-      managedDisk: {
-        storageAccountType: 'Premium_LRS'
+      createOption: 'FromImage'
+      managedDisk:{
+        storageAccountType:'Standard_LRS'
       }
     }
     osType: 'Windows'
-    vmSize: 'Standard_DS2_v2'
-    // Non-required parameters
-    adminPassword: vmpass
-    location: paralocation
-
+    vmSize: vmSize
+    extensionAzureDiskEncryptionConfig: {
+      enabled: true
+      settings: {
+        EncryptionOperation: 'EnableEncryption'
+        KeyVaultURL: encryptionKeyVault.outputs.uri
+        KeyVaultResourceId: encryptionKeyVault.outputs.resourceId
+        VolumeType: 'All'
+        ResizeOSDisk: false
+      }
+    }
+    extensionAntiMalwareConfig: {
+      enabled: true
+      settings: {
+        AntimalwareEnabled: 'true'
+        RealtimeProtectionEnabled: 'true'
+      }
+    
+    }
     extensionDependencyAgentConfig: {
       enabled: true
-      // tags: {
-      //   Environment: 'Non-Prod'
-      //   'hidden-title': 'This is visible in the resource name'
-      //   Role: 'DeploymentValidation'
-      // }
+     
     }
-
     extensionMonitoringAgentConfig: {
       enabled: true
-      monitoringWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
-      // tags: {
-      //   Environment: 'Non-Prod'
-      //   'hidden-title': 'This is visible in the resource name'
-      //   Role: 'DeploymentValidation'
-      // }
+      monitoringWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId 
+      
     }
   }
 }
+
+module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
+  name:'encryptionKeyVaultDeployment'
+  params:{
+    name: CoreEncryptKeyVaultName
+    location: paralocation
+    enableRbacAuthorization: false
+    enableVaultForDeployment:true
+    enableVaultForDiskEncryption:true
+    enableVaultForTemplateDeployment:true
+    networkAcls:{
+      defaultAction:'Allow'
+      bypass:'AzureServices'
+    }
+    sku:'standard'
+    privateEndpoints: [
+      {
+        privateDnsZoneResourceIds: [
+          KVprivateDnsZone.outputs.resourceId
+        ]
+        service: 'vault'
+        subnetResourceId:  CorevirtualNetwork.outputs.subnetResourceIds[1]
+        
+      }
+    ]
+  }
+}
+
+//RSV
+module recoveryServiceVaults './ResourceModules/modules/recovery-services/vault/main.bicep' ={
+  //'br:bicep/modules/recovery-services.vault:1.0.0' = { //CARML
+  name:recoveryServiceVaultName
+  params: {
+    name:recoveryServiceVaultName
+    location:paralocation
+  
+    publicNetworkAccess:'Disabled'
+  }
+}
+// module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.1.0' = {
+  // name: 'vm1core001'
+  // params: {
+  //   // Required parameters
+  //   adminUsername: vmuser
+  //   // encryptionAtHost: false
+  //   imageReference: {
+  //     offer: 'WindowsServer'
+  //     publisher: 'MicrosoftWindowsServer'
+  //     sku: '2022-datacenter-azure-edition'
+  //     version: 'latest'
+  //   }
+  //   name: 'vm1core001'
+  //   nicConfigurations: [
+  //     {
+  //       ipConfigurations: [
+  //         {
+  //           name: 'ipconfig01'
+  //           subnetResourceId: CorevirtualNetwork.outputs.subnetResourceIds[0]
+  //         }
+  //       ]
+  //       nicSuffix: '-nic-01'
+  //     }
+  //   ]
+  //   osDisk: {
+  //     caching: 'ReadWrite'
+  //     diskSizeGB: '128'
+  //     managedDisk: {
+  //       storageAccountType: 'Standard_LRS'
+  //     }
+  //   }
+  //   osType: 'Windows'
+  //   vmSize: 'Standard_DS2_v2'
+
+  //   extensionAntiMalwareConfig: {
+  //     enabled: true
+  //     settings: {
+  //       AntimalwareEnabled: 'true'
+  //       RealtimeProtectionEnabled: 'true'
+  //     }
+  //   // Non-required parameters
+  //   adminPassword: vmpass
+  //   location: paralocation
+
+  //   extensionDependencyAgentConfig: {
+  //     enabled: true
+     
+  //   }
+
+  //   extensionMonitoringAgentConfig: {
+  //     enabled: true
+  //     monitoringWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+      
+  //   }
+//   }
+// }
 
 
 
@@ -295,70 +445,110 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   }
 }
 
-// Vault ---------------
 
-// module vault 'br/public:avm/res/key-vault/vault:0.3.4' = {
-//   name: 'kv-encrypt-core-0921'
-//   params: {
-//     // Required parameters
-//     name: 'kv-encrypt-core-0921'
-//     sku: 'standard'
-//     location: paralocation
-    
-//     // Non-required parameters
-    
-    
 
-//     networkAcls: {
-//       bypass: 'AzureService'
-//       deafultAction: 'Deny'
-//       ipRules: [
-//         {
+// --------------- firewall policy ------
+module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.1.0' = {
+  name:'firewallPolicyDeployment'
+  params:{
+    name: firewallPolicyName
+    location: paralocation
+    ruleCollectionGroups: [
+      {
+        name: firewallRulesName
+        priority: 200
+        ruleCollections: [
+          {
+            action: {
+              type: 'Allow'
+            }
+            name: 'allowAllRule'
+            priority: 1100
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+            rules: [
+              {
+                name:'Rule1'
+                ruleType:'NetworkRule'
+                ipProtocols:['Any']
+                sourceAddresses:['*']
+                destinationAddresses:['*']
+                destinationPorts:['*']
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
 
-//         }
-//       ]
-
-//     }
-//     enablePurgeProtection: false
-//     enableRbacAuthorization: false
-    
-    
-    
-    
-//     // privateEndpoints: [
-//     //   {
-        
-//     //     privateDnsZoneResourceIds: [
-//     //       '<privateDNSResourceId>'
-//     //     ]
-       
-//     //     service: 'vault'
-//     //     subnetResourceId: '<subnetResourceId>'
-//     //     tags: {
-//     //       Environment: 'Non-Prod'
-//     //       'hidden-title': 'This is visible in the resource name'
-//     //       Role: 'DeploymentValidation'
-//     //     }
-//     //   }
-//     // ]
+module azureFirewall './ResourceModules/modules/network/azure-firewall/main.bicep' = {
+  name: 'firewallDeployment'
+  params: {
+    // Required parameters
+    name: fwName
+    // Non-required parameters
+    location: paralocation
+    hubIPAddresses:{
+      privateIPAddress: AzFwPrivateIP
+    }
+    publicIPAddressObject: {
+      name: 'pip-fw-hub-${paralocation}-001'
+      publicIPAllocationMethod: 'Static'
+      skuName: 'Standard'
+    }
    
-  
-//     softDeleteRetentionInDays: 7
-    
-//   }
-// }
-
-
+    vNetId: HubvirtualNetwork.outputs.resourceId
+    firewallPolicyId:firewallPolicy.outputs.resourceId
+    diagnosticSettings: [
+      {
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+        name: 'customSetting'
+        workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId  
+      }
+    ]
+  }
+}
 
 // Private DNS Zones ----------
 
-module aspprivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.2.3' = {
-  name: 'aspprivateDNSZone'
+module asprivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.2.3' = {
+  name: 'asprivateDNSZone'
   params: {
     // Required parameters
     name: 'privatelink.azurewebsites.net'
     // Non-required parameters
     location: 'global'
+    virtualNetworkLinks: [
+      {
+        name: 'link-core'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: CorevirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-dev'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: devSpokeVirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-hub'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: HubvirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-prod'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: ProdSpokeVirtualNetwork.outputs.resourceId
+      }
+    ]
   }
 }
 
@@ -369,6 +559,32 @@ module SQLprivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.2.3' = {
     name: varSQLPrivateDnsZoneName
     // Non-required parameters
     location: 'global'
+    virtualNetworkLinks: [
+      {
+        name: 'link-core'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: CorevirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-dev'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: devSpokeVirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-hub'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: HubvirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-prod'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: ProdSpokeVirtualNetwork.outputs.resourceId
+      }
+    ]
   }
 }
 
@@ -380,6 +596,26 @@ module StprivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.2.3' = {
     name: varStPrivateDnsZoneName
     // Non-required parameters
     location: 'global'
+    virtualNetworkLinks: [
+      {
+        name: 'link-core'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: CorevirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-hub'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: HubvirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-prod'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: ProdSpokeVirtualNetwork.outputs.resourceId
+      }
+    ]
   }
 }
 
@@ -391,6 +627,27 @@ module KVprivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.2.3' = {
     name: varKvPrivateDnsZoneName
     // Non-required parameters
     location: 'global'
+
+    virtualNetworkLinks: [
+      {
+        name: 'link-core'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: CorevirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-hub'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: HubvirtualNetwork.outputs.resourceId
+      }
+      {
+        name: 'link-prod'
+        location: 'global'
+        registrationEnabled: false
+        virtualNetworkResourceId: ProdSpokeVirtualNetwork.outputs.resourceId
+      }
+    ]
   }
 }
 
@@ -398,55 +655,69 @@ module KVprivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.2.3' = {
 // ---------- Route Table ----------
 
 
-// module routeTable 'br/public:avm/res/network/route-table:0.2.1' = {
-//   name: 'rtfw'
-//   params: {
-//     // Required parameters
-//     name: 'rt-to-fw'
-//     // Non-required parameters
-//     location: paralocation
-//     routes: [
-//       {
-//         name: 'default'
-//         properties: {
-//           addressPrefix: '0.0.0.0/0'
-//           nextHopIpAddress: '172.16.0.20'
-//           nextHopType: 'VirtualAppliance'
-//         }
-//       }
-//       {
-//         name: 'core-to-fw'
-//         properties: {
-//           addressPrefix: paraCoreVnetaddressprefix
-//           nextHopType: 'VirtualAppliance'
-//           nextHopIpAddress: paraFWSubnetIP
-//         }
-//       }
+module routeTable 'br/public:avm/res/network/route-table:0.2.1' = {
+  name: 'rtfw'
+  params: {
+    // Required parameters
+    name: 'rt-${paralocation}-001'
+    // Non-required parameters
+    location: paralocation
+    routes: [
+      {
+        name: 'default'
+        properties: {
+          addressPrefix: '0.0.0.0/0'
+          nextHopIpAddress: '172.16.0.20'
+          nextHopType: 'VirtualAppliance'
+        }
+      }
+      {
+        name: 'core-to-fw'
+        properties: {
+          addressPrefix: paraCoreVnetaddressprefix
+          nextHopType: 'VirtualAppliance'
+          nextHopIpAddress: paraFWSubnetIP
+        }
+      }
 
-//       {
-//         name: 'dev-to-fw'
-//         properties: {
-//           addressPrefix: paraDevVnetaddressprefix
-//           nextHopType: 'VirtualAppliance'
-//           nextHopIpAddress: paraFWSubnetIP
-//         }
-//       }
+      {
+        name: 'dev-to-fw'
+        properties: {
+          addressPrefix: paraDevVnetaddressprefix
+          nextHopType: 'VirtualAppliance'
+          nextHopIpAddress: paraFWSubnetIP
+        }
+      }
 
-//       {
-//         name: 'prod-to-fw'
-//         properties: {
-//           addressPrefix: paraProdVnetaddressprefix
-//           nextHopType: 'VirtualAppliance'
-//           nextHopIpAddress:paraFWSubnetIP
-//         }
-//       }
-//     ]
+      {
+        name: 'prod-to-fw'
+        properties: {
+          addressPrefix: paraProdVnetaddressprefix
+          nextHopType: 'VirtualAppliance'
+          nextHopIpAddress:paraFWSubnetIP
+        }
+      }
+    ]
     
-//   }
-// }
+  }
+}
+
+
+// ---- applicationInsights -----------
+module applicationInsights 'br/public:avm/res/insights/component:0.1.2' = {
+  name:'AppInsightsDeployment'
+  params:{
+    name:'${paralocation}-aSInsights'
+    location: paralocation
+    workspaceResourceId:logAnalyticsWorkspace.outputs.resourceId 
+    kind:'web'
+    applicationType: 'web'
+  }
+}
 
 // ----------------------- PROD SPOKE ----------------
-// ---------- App Service Plan ----
+
+// ---------- Prod App Service Plan ----
 
 module AppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
   name: 'AppServicePlan'
@@ -460,12 +731,13 @@ module AppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
       size: paraAspSkuSize
       tier: paraAspSkuTier
     }
-    
+    reserved: true
     location: paralocation
+    kind: 'Linux'
   }
 }
 
-// ---------- App Service ------
+// ---------- Prod App Service ------
 
 module appservice 'br/public:avm/res/web/site:0.2.0' = {
   name: 'AppService'
@@ -474,15 +746,24 @@ module appservice 'br/public:avm/res/web/site:0.2.0' = {
     kind: 'app'
     name: 'as-prod-001-ap'
     serverFarmResourceId: AppServicePlan.outputs.resourceId
+    diagnosticSettings: [
+      {
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+        name: 'customSetting'
+        workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId 
+      }
+    ]
+    appInsightResourceId: ''
 
-   
     location: paralocation
-    
-    
     privateEndpoints: [
       {
         privateDnsZoneResourceIds: [
-          aspprivateDnsZone.outputs.resourceId
+          asprivateDnsZone.outputs.resourceId
         ]
         subnetResourceId: ProdSpokeVirtualNetwork.outputs.subnetResourceIds[0]
         
@@ -493,54 +774,244 @@ module appservice 'br/public:avm/res/web/site:0.2.0' = {
     
     scmSiteAlsoStopped: true
     siteConfig: {
-      alwaysOn: true
-      metadata: [
+      linuxFxVersion:'DOTNETCORE|7.0'
+      appSettings:[
         {
-          name: 'CURRENT_STACK'
-          value: 'dotnetcore'
+          name:'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value:applicationInsights.outputs.instrumentationKey
+        }
+        
+        {
+          name:'ApplicationInsightsAgent_EXTENSION_VERSION'
+          value:'~3'
+        }
+        {
+          name:'XDT_MicrosoftApplicationInsights_Mode'
+          value:'default'
         }
       ]
+      alwaysOn:true
     }
-    
-    vnetContentShareEnabled: true
-    vnetImagePullEnabled: true
-    vnetRouteAllEnabled: true
   }
 }
 
 // --------- Source Control ---------
 
-resource srcControls 'Microsoft.Web/sites/sourcecontrols@2022-03-01' = {
-  
-  name: 'as-prod-001-ap/web'
-  kind: 'Linux'
-  properties: {
-    repoUrl: paraRepositoryUrl
-    branch: paraBranch
-    isManualIntegration: true 
+
+module SourceControl 'ModSourceControl.bicep' = {
+  dependsOn: [
+    appservice
+  ]
+  name: 'sourceControl'
+  params: {
+    paraRepositoryUrl: paraRepositoryUrl
+    paraBranch: paraBranch
+    paraisManualIntegration: true
   }
 }
 
-// module SourceControl 'ModSourceControl.bicep' ={
-//   dependsOn: [
-//     appservice
-//   ]
-//   name: ''
-//   params: {
-//     paraRepositoryUrl: ''
-//     paraBranch: ''
-//     parasrcControlParent: appservice.outputs.resourceId
+// --------- Prod SQL Server -------------
 
-//   }
-// }
+module sqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
+  name:'prodSQLServer'
+  params:{
+    name: prodSQLserverName
+    administratorLogin: sqladminUsername
+    administratorLoginPassword:sqladminPassword
+    location: paralocation
+    databases: [
+      {
+        skuName: ProdSQLServerSku
+        skuTier: ProdSQLServerSku
+        name:  prodSQLDatabaseName 
+        maxSizeBytes:2147483648 
+      }
+    ]
+    privateEndpoints: [
+      {
+        name: 'private-endpoint-prodSQLServer}' 
+        privateDnsZoneResourceIds: [
+          SQLprivateDnsZone.outputs.resourceId
+        ]
+        service: 'sqlServer'
+        subnetResourceId: ProdSpokeVirtualNetwork.outputs.subnetResourceIds[1] 
+        customNetworkInterfaceName : 'pip-${prodSQLserverName}'
+      }
+    ]
+  }
+}
+
+
+// ---------- Prod Storage ACCOUNT ----
+
+module prodstorageAccount 'br/public:avm/res/storage/storage-account:0.5.0' = {
+  name: 'prodstorageAccountDeployment'
+  params: {
+    name: StAccountName
+    skuName:'Standard_LRS'
+    kind:'StorageV2'
+    location: paralocation
+    privateEndpoints: [
+      {
+        name:prodStPrivateEndpointName
+        privateDnsZoneResourceIds: [
+          StprivateDnsZone.outputs.resourceId
+        ]
+        service: 'blob'
+        subnetResourceId: ProdSpokeVirtualNetwork.outputs.subnetResourceIds[2]
+        customNetworkInterfaceName :'pip-${StAccountName}'
+      }
+    ]
+  }
+}
+
+// ----------------------- DEV SPOKE ----------------
+
+// ---------- Dev App Service Plan ----
+
+module DevAppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
+  name: 'devAppServicePlan'
+  params: {
+    // Required parameters
+    name: 'asp'
+    sku: {
+      capacity: paraAspSkuCapacity
+      family: paraAspSkuFamily
+      name: paraAspSkuName
+      size: paraAspSkuSize
+      tier: paraAspSkuTier
+    }
+    reserved: true
+    location: paralocation
+    kind: 'Linux'
+  }
+}
+
+// ---------- Dev App Service ------
+
+module devappservice 'br/public:avm/res/web/site:0.2.0' = {
+  name: 'devAppService'
+  params: {
+    // Required parameters
+    kind: 'app'
+    name: 'as-dev-001-ap'
+    serverFarmResourceId: DevAppServicePlan.outputs.resourceId
+    diagnosticSettings: [
+      {
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+        name: 'customSetting'
+        workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId 
+      }
+    ]
+    appInsightResourceId: ''
+
+    location: paralocation
+    privateEndpoints: [
+      {
+        privateDnsZoneResourceIds: [
+          asprivateDnsZone.outputs.resourceId
+        ]
+        subnetResourceId: devSpokeVirtualNetwork.outputs.subnetResourceIds[0]
+        
+        
+      }
+    ]
+    publicNetworkAccess: 'Disabled'
+    
+    scmSiteAlsoStopped: true
+    siteConfig: {
+      linuxFxVersion:'DOTNETCORE|7.0'
+      appSettings:[
+        {
+          name:'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value:applicationInsights.outputs.instrumentationKey
+        }
+        
+        {
+          name:'ApplicationInsightsAgent_EXTENSION_VERSION'
+          value:'~3'
+        }
+        {
+          name:'XDT_MicrosoftApplicationInsights_Mode'
+          value:'default'
+        }
+      ]
+      alwaysOn:true
+    }
+  }
+}
+
+
+module DevSourceControl 'ModSourceControl.bicep' = {
+  dependsOn: [
+    appservice
+  ]
+  name: 'devsourceControl'
+  params: {
+    paraRepositoryUrl: paraRepositoryUrl
+    paraBranch: paraBranch
+    paraisManualIntegration: true
+  }
+}
 
 // --------- SQL Server -------------
 
-
+module devsqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
+  name:'devSQLServer'
+  params:{
+    name: devSQLserverName
+    administratorLogin: sqladminUsername
+    administratorLoginPassword:sqladminPassword
+    location: paralocation
+    databases: [
+      {
+        skuName: ProdSQLServerSku
+        skuTier: ProdSQLServerSku
+        name:  devSQLDatabaseName 
+        maxSizeBytes:2147483648 
+      }
+    ]
+    privateEndpoints: [
+      {
+        name: 'private-endpoint-prodSQLServer}' 
+        privateDnsZoneResourceIds: [
+          SQLprivateDnsZone.outputs.resourceId
+        ]
+        service: 'sqlServer'
+        subnetResourceId: ProdSpokeVirtualNetwork.outputs.subnetResourceIds[1] 
+        customNetworkInterfaceName : 'pip-${prodSQLserverName}'
+      }
+    ]
+  }
+}
 
 
 // ---------- Storage ACCOUNT ----
 
-
+module storageAccount 'br/public:avm/res/storage/storage-account:0.5.0' = {
+  name: 'storageAccountDeployment'
+  params: {
+    name: StAccountName
+    skuName:'Standard_LRS'
+    kind:'StorageV2'
+    location: paralocation
+    privateEndpoints: [
+      {
+        name:prodStPrivateEndpointName
+        privateDnsZoneResourceIds: [
+          StprivateDnsZone.outputs.resourceId
+        ]
+        service: 'blob'
+        subnetResourceId: ProdSpokeVirtualNetwork.outputs.subnetResourceIds[2]
+        customNetworkInterfaceName :'pip-${StAccountName}'
+      }
+    ]
+  }
+}
 
 // ---------- 
+
