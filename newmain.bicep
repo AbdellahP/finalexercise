@@ -365,10 +365,98 @@ module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
   }
 }
 
+//DCR Association --------------//
+
+module DCRassociation 'ModDCRassociation.bicep' = {
+  name: 'configurationAccessEndpoint'
+  dependsOn: [ 
+    virtualMachine
+  ]
+
+  params:{
+    vmName: vmName
+    DCRId: MSVMI_PerfandDa_hub_spoke.outputs.resourceId
+  }
+}
+
+// Datacollection Rules
+
+module MSVMI_PerfandDa_hub_spoke 'br/public:avm/res/insights/data-collection-rule:0.1.2' = {
+  name: 'VMInsights-DCR'
+  params: {
+    location: paralocation
+    name: 'MSVMI-PerfandDa-${vmName}'
+    description: 'Data collection rule for VM Insights.'
+    dataSources: {
+      performanceCounters: [
+        {
+          name: 'VMInsightsPerfCounters'
+          streams: [
+            'Microsoft-InsightsMetrics'
+          ]
+          scheduledTransferPeriod: 'PT1M'
+          samplingFrequencyInSeconds: 60
+          counterSpecifiers: [
+            '\\VmInsights\\DetailedMetrics'
+          ]
+        }
+      ]
+      extensions: [
+        {
+          streams: [
+            'Microsoft-ServiceMap'
+          ]
+          extensionName: 'DependencyAgent'
+          extensionSettings: {}
+          name: 'DependencyAgentDataSource'
+        }
+      ]
+    }
+    dataCollectionEndpointId: dataCollectionEndpoint.outputs.resourceId
+    destinations: {
+      logAnalytics: [
+        {
+          workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+          name: 'VMInsightsPerf-Logs-Dest'
+        }
+      ]
+    }
+    dataFlows: [
+      {
+        streams: [
+          'Microsoft-InsightsMetrics'
+        ]
+        destinations: [
+          'VMInsightsPerf-Logs-Dest'
+        ]
+      }
+      {
+        streams: [
+          'Microsoft-ServiceMap'
+        ]
+        destinations: [
+          'VMInsightsPerf-Logs-Dest'
+        ]
+      }
+    ]
+    
+  }
+}
+
+module dataCollectionEndpoint 'br/public:avm/res/insights/data-collection-endpoint:0.1.2' = {
+  name: 'DCEP'
+  params: {
+    name: 'dataCollectionEP'
+    location: paralocation
+    kind: 'Windows'
+    publicNetworkAccess: 'Enabled'
+  }
+}
 //RSV
 module recoveryServiceVaults './ResourceModules/modules/recovery-services/vault/main.bicep' ={
-  //'br:bicep/modules/recovery-services.vault:1.0.0' = { //CARML
+  
   name:recoveryServiceVaultName
+
   params: {
     name:recoveryServiceVaultName
     location:paralocation
@@ -376,62 +464,7 @@ module recoveryServiceVaults './ResourceModules/modules/recovery-services/vault/
     publicNetworkAccess:'Disabled'
   }
 }
-// module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.1.0' = {
-  // name: 'vm1core001'
-  // params: {
-  //   // Required parameters
-  //   adminUsername: vmuser
-  //   // encryptionAtHost: false
-  //   imageReference: {
-  //     offer: 'WindowsServer'
-  //     publisher: 'MicrosoftWindowsServer'
-  //     sku: '2022-datacenter-azure-edition'
-  //     version: 'latest'
-  //   }
-  //   name: 'vm1core001'
-  //   nicConfigurations: [
-  //     {
-  //       ipConfigurations: [
-  //         {
-  //           name: 'ipconfig01'
-  //           subnetResourceId: CorevirtualNetwork.outputs.subnetResourceIds[0]
-  //         }
-  //       ]
-  //       nicSuffix: '-nic-01'
-  //     }
-  //   ]
-  //   osDisk: {
-  //     caching: 'ReadWrite'
-  //     diskSizeGB: '128'
-  //     managedDisk: {
-  //       storageAccountType: 'Standard_LRS'
-  //     }
-  //   }
-  //   osType: 'Windows'
-  //   vmSize: 'Standard_DS2_v2'
 
-  //   extensionAntiMalwareConfig: {
-  //     enabled: true
-  //     settings: {
-  //       AntimalwareEnabled: 'true'
-  //       RealtimeProtectionEnabled: 'true'
-  //     }
-  //   // Non-required parameters
-  //   adminPassword: vmpass
-  //   location: paralocation
-
-  //   extensionDependencyAgentConfig: {
-  //     enabled: true
-     
-  //   }
-
-  //   extensionMonitoringAgentConfig: {
-  //     enabled: true
-  //     monitoringWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
-      
-  //   }
-//   }
-// }
 
 
 
@@ -667,7 +700,7 @@ module routeTable 'br/public:avm/res/network/route-table:0.2.1' = {
         name: 'default'
         properties: {
           addressPrefix: '0.0.0.0/0'
-          nextHopIpAddress: '172.16.0.20'
+          nextHopIpAddress: AzFwPrivateIP
           nextHopType: 'VirtualAppliance'
         }
       }
@@ -676,7 +709,7 @@ module routeTable 'br/public:avm/res/network/route-table:0.2.1' = {
         properties: {
           addressPrefix: paraCoreVnetaddressprefix
           nextHopType: 'VirtualAppliance'
-          nextHopIpAddress: paraFWSubnetIP
+          nextHopIpAddress: AzFwPrivateIP
         }
       }
 
@@ -685,7 +718,7 @@ module routeTable 'br/public:avm/res/network/route-table:0.2.1' = {
         properties: {
           addressPrefix: paraDevVnetaddressprefix
           nextHopType: 'VirtualAppliance'
-          nextHopIpAddress: paraFWSubnetIP
+          nextHopIpAddress: AzFwPrivateIP
         }
       }
 
@@ -694,7 +727,7 @@ module routeTable 'br/public:avm/res/network/route-table:0.2.1' = {
         properties: {
           addressPrefix: paraProdVnetaddressprefix
           nextHopType: 'VirtualAppliance'
-          nextHopIpAddress:paraFWSubnetIP
+          nextHopIpAddress:AzFwPrivateIP
         }
       }
     ]
@@ -958,7 +991,7 @@ module DevSourceControl 'ModSourceControl.bicep' = {
   }
 }
 
-// --------- SQL Server -------------
+// --------- Dev SQL Server -------------
 
 module devsqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
   name:'devSQLServer'
@@ -990,7 +1023,7 @@ module devsqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
 }
 
 
-// ---------- Storage ACCOUNT ----
+// ---------- Dev Storage ACCOUNT ----
 
 module storageAccount 'br/public:avm/res/storage/storage-account:0.5.0' = {
   name: 'storageAccountDeployment'
@@ -1013,5 +1046,5 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.5.0' = {
   }
 }
 
-// ---------- 
+
 
