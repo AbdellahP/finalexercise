@@ -1,5 +1,5 @@
 name: deploy-hub
-concurrency: hub-spoke
+concurrency: landing-zone
 
 on:
   push:
@@ -11,37 +11,49 @@ permissions:
   contents: read
 
 env:
-  AZURE_RESOURCEGROUP_NAME: finalexercise
+  AZURE_RESOURCEGROUP_NAME: azure-devops-track-hub-spoke-ap
   ENVIRONMENT_TYPE: Test
+
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Run Bicep linter
-      run: az bicep build --file ./newmain.bicep
-
+      - uses: actions/checkout@v3
+      - name: Check CARML Repo
+        uses: actions/checkout@v3
+        with:
+          repository: Azure/ResourceModules
+          path: ./ResourceModules
+      - name: Run Bicep linter
+        run: az bicep build --file ./newmain.bicep
+      - name: Run Parameter linter
+        run: az bicep build-params --file ./parameterfile.bicepparam
   validate:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: azure/login@v1
-      name: Sign in to Azure
+    - name: Sign in to Azure
+      uses: azure/login@v1
       with:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - uses: actions/checkout@v3
+      name: Check CARML Repo
+      with:
+          repository: Azure/ResourceModules
+          path: ./ResourceModules
     - uses: azure/arm-deploy@v1
       name: Run preflight validation
       with:
         deploymentName: ${{ github.run_number }}
         resourceGroupName: ${{ env.AZURE_RESOURCEGROUP_NAME }}
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         template: ./newmain.bicep
         parameters: ./parameterfile.bicepparam
         deploymentMode: Validate
-
-  deploy:
+  preview:
     runs-on: ubuntu-latest
     needs: [lint, validate]
     steps:
@@ -52,11 +64,43 @@ jobs:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - uses: actions/checkout@v3
+      name: Check CARML Repo
+      with:
+          repository: Azure/ResourceModules
+          path: ./ResourceModules
     - uses: azure/arm-deploy@v1
-      name: Deploy website
+      name: Run what-if
+      with:
+        failOnStdErr: false
+        resourceGroupName: ${{ env.AZURE_RESOURCEGROUP_NAME }}
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        template: ./newmain.bicep
+        parameters: ./parameterfile.bicepparam
+        additionalArguments: --what-if
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [lint, validate, preview]
+    outputs:
+        appServiceAppHostName: ${{ steps.deploy.outputs.appServiceAppHostName }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - uses: actions/checkout@v3
+      name: Check CARML Repo
+      with:
+          repository: Azure/ResourceModules
+          path: ./ResourceModules
+    - uses: azure/arm-deploy@v1
+      id: deploy
       with:
         failOnStdErr: false
         deploymentName: ${{ github.run_number }}
         resourceGroupName: ${{ env.AZURE_RESOURCEGROUP_NAME }}
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         template: ./newmain.bicep
         parameters: ./parameterfile.bicepparam
