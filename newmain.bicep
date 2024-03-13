@@ -47,6 +47,10 @@ var devSQLDatabaseName = 'sqldb-dev-${paralocation}-001-${RandString}'
 var StAccountName = 'stprod001${RandString}'
 var prodStPrivateEndpointName = 'private-endpoint-${StAccountName}'
 
+// Dev St ------
+
+var devStAccountName = 'stDev001${RandString}'
+var devStPrivateEndPointName = 'private-endpoint-${devStAccountName}'
 //---- Firewall----
 
 var AzFwPrivateIP = '10.10.3.4'
@@ -862,7 +866,7 @@ module sqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
     ]
     privateEndpoints: [
       {
-        name: 'private-endpoint-prodSQLServer}' 
+        name: 'private-endpoint-prodSQLServer' 
         privateDnsZoneResourceIds: [
           SQLprivateDnsZone.outputs.resourceId
         ]
@@ -981,7 +985,7 @@ module devappservice 'br/public:avm/res/web/site:0.2.0' = {
 
 module DevSourceControl 'ModSourceControl.bicep' = {
   dependsOn: [
-    appservice
+    devappservice
   ]
   name: 'devsourceControl'
   params: {
@@ -1010,13 +1014,13 @@ module devsqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
     ]
     privateEndpoints: [
       {
-        name: 'private-endpoint-prodSQLServer}' 
+        name: 'private-endpoint-devSQLServer' 
         privateDnsZoneResourceIds: [
           SQLprivateDnsZone.outputs.resourceId
         ]
         service: 'sqlServer'
-        subnetResourceId: ProdSpokeVirtualNetwork.outputs.subnetResourceIds[1] 
-        customNetworkInterfaceName : 'pip-${prodSQLserverName}'
+        subnetResourceId: devSpokeVirtualNetwork.outputs.subnetResourceIds[1] 
+        customNetworkInterfaceName : 'pip-${devSQLserverName}'
       }
     ]
   }
@@ -1028,19 +1032,19 @@ module devsqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
 module storageAccount 'br/public:avm/res/storage/storage-account:0.5.0' = {
   name: 'storageAccountDeployment'
   params: {
-    name: StAccountName
+    name: devStAccountName
     skuName:'Standard_LRS'
     kind:'StorageV2'
     location: paralocation
     privateEndpoints: [
       {
-        name:prodStPrivateEndpointName
+        name:devStPrivateEndPointName
         privateDnsZoneResourceIds: [
           StprivateDnsZone.outputs.resourceId
         ]
         service: 'blob'
-        subnetResourceId: ProdSpokeVirtualNetwork.outputs.subnetResourceIds[2]
-        customNetworkInterfaceName :'pip-${StAccountName}'
+        subnetResourceId: devSpokeVirtualNetwork.outputs.subnetResourceIds[2]
+        customNetworkInterfaceName :'pip-${devStAccountName}'
       }
     ]
   }
