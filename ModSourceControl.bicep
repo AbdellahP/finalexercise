@@ -1,9 +1,10 @@
 param paraRepositoryUrl string
 param paraBranch string
 param paraisManualIntegration bool
+param srcName string
 
 resource srcControls 'Microsoft.Web/sites/sourcecontrols@2022-03-01' = {
-  name: 'as-prod-001-ap/web'
+  name: srcName
   kind: 'Linux'
   properties: {
     repoUrl: paraRepositoryUrl

@@ -31,7 +31,7 @@ var vmSize = 'Standard_D2S_v3'
 
 // encryptionKV
 var CoreEncryptKeyVaultName = 'kv-encrypt-core-${RandString}'
-var CoreSecVaultName = 'kv-sec-ap-01'
+var CoreSecVaultName = 'kv-sec-ap-2'
 
 // sql vars
 
@@ -49,7 +49,7 @@ var prodStPrivateEndpointName = 'private-endpoint-${StAccountName}'
 
 // Dev St ------
 
-var devStAccountName = 'stDev001${RandString}'
+var devStAccountName = 'stdev001${RandString}'
 var devStPrivateEndPointName = 'private-endpoint-${devStAccountName}'
 //---- Firewall----
 
@@ -264,7 +264,7 @@ module bastionHost 'br/public:avm/res/network/bastion-host:0.1.0' = {
 }
 
 // ----- existing KV with pass and user name
-resource coreSecretVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+resource ModcoreSecretVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
   name: CoreSecVaultName
 }
 
@@ -272,8 +272,8 @@ resource coreSecretVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
 module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.1' = {
   name:'VirtualMachineCore'
   params:{
-    adminUsername:  coreSecretVault.getSecret('VMUsername')
-    adminPassword: coreSecretVault.getSecret('VMAdminPassword')
+    adminUsername:  ModcoreSecretVault.getSecret('VMUsername')
+    adminPassword: ModcoreSecretVault.getSecret('VMAdminPassword')
     computerName: 'coreComputer'
     encryptionAtHost:false
     imageReference: {
@@ -456,7 +456,7 @@ module dataCollectionEndpoint 'br/public:avm/res/insights/data-collection-endpoi
     publicNetworkAccess: 'Enabled'
   }
 }
-//RSV
+//-----------------RSV ---------------------------
 module recoveryServiceVaults './ResourceModules/modules/recovery-services/vault/main.bicep' ={
   
   name:recoveryServiceVaultName
@@ -794,7 +794,7 @@ module appservice 'br/public:avm/res/web/site:0.2.0' = {
         workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId 
       }
     ]
-    appInsightResourceId: ''
+    appInsightResourceId: applicationInsights.outputs.resourceId
 
     location: paralocation
     privateEndpoints: [
@@ -841,6 +841,7 @@ module SourceControl 'ModSourceControl.bicep' = {
   ]
   name: 'sourceControl'
   params: {
+    srcName: 'as-prod-001-ap/web'
     paraRepositoryUrl: paraRepositoryUrl
     paraBranch: paraBranch
     paraisManualIntegration: true
@@ -944,7 +945,7 @@ module devappservice 'br/public:avm/res/web/site:0.2.0' = {
         workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId 
       }
     ]
-    appInsightResourceId: ''
+    appInsightResourceId: applicationInsights.outputs.resourceId
 
     location: paralocation
     privateEndpoints: [
@@ -989,6 +990,7 @@ module DevSourceControl 'ModSourceControl.bicep' = {
   ]
   name: 'devsourceControl'
   params: {
+    srcName: 'as-dev-001-ap/web'
     paraRepositoryUrl: paraRepositoryUrl
     paraBranch: paraBranch
     paraisManualIntegration: true
