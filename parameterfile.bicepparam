@@ -2,9 +2,6 @@ using 'newmain.bicep'
 
 
 
-param logAnalyticsWorkspacename  = 'logAnalyticsWorkspace'
-
-
 param paraFWSubnetIP = '10.10.3.0/24'
 param paraCoreVnetaddressprefix = '10.20.0.0/16'
 param paraHubVnetaddressprefix = '10.10.0.0/16'
@@ -22,6 +19,8 @@ param recoveryServiceVaultName = 'rsv-core-uksouth-001'
 param firewallRulesName = 'fwRules-hub-001'
 param firewallPolicyName = 'fwPolicy-hub-001'
 param fwName = 'fw-hub-001'
+
+param logAnalyticsWorkspaceName = 'log-core-uksouth-001-'
 
 // APP SERVICE PLAN 
 param paraAspSkuCapacity = 1

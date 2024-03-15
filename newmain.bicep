@@ -1,6 +1,6 @@
 param paralocation string = resourceGroup().location
  
-param logAnalyticsWorkspacename string 
+
 param paraAspSkuCapacity int
 param paraAspSkuFamily string
 param paraAspSkuName string
@@ -13,6 +13,9 @@ param paraProdVnetaddressprefix string
 param paraDevVnetaddressprefix string
 param paraRepositoryUrl string
 param paraBranch string
+
+param logAnalyticsWorkspaceName string
+var vLogAnalyticsWorkspaceName = '${logAnalyticsWorkspaceName}${Rand}' 
 
 param vmName string
 param firewallRulesName string
@@ -413,19 +416,7 @@ module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
   }
 }
 
-//DCR Association --------------//
 
-module DCRassociation 'ModDCRassociation.bicep' = {
-  name: 'configurationAccessEndpoint'
-  dependsOn: [ 
-    virtualMachine
-  ]
-
-  params:{
-    vmName: vmName
-    DCRId: MSVMI_PerfandDa_hub_spoke.outputs.resourceId
-  }
-}
 
 // Datacollection Rules
 
@@ -492,12 +483,26 @@ module MSVMI_PerfandDa_hub_spoke 'br/public:avm/res/insights/data-collection-rul
 }
 
 module dataCollectionEndpoint 'br/public:avm/res/insights/data-collection-endpoint:0.1.2' = {
-  name: 'DCEP'
+  name: 'DataCollectionEndpoint'
   params: {
-    name: 'dataCollectionEP'
+    name: 'VMDCE'
     location: paralocation
     kind: 'Windows'
     publicNetworkAccess: 'Enabled'
+  }
+}
+
+//DCR Association --------------//
+
+module DCRassociation 'ModDCRassociation.bicep' = {
+  name: 'configurationAccessEndpoint'
+  dependsOn: [ 
+    virtualMachine
+  ]
+
+  params:{
+    vmName: vmName
+    DCRId: MSVMI_PerfandDa_hub_spoke.outputs.resourceId
   }
 }
 //-----------------RSV ---------------------------
@@ -514,15 +519,54 @@ module recoveryServiceVaults './ResourceModules/modules/recovery-services/vault/
 }
 
 
-
-
 module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.3.1' = {
-  name: 'logAnalyticsWorkspace'
+  name: 'LogAnalyticsWorkspace'
   params: {
-    // Required parameters
-    name: logAnalyticsWorkspacename
-    // Non-required parameters
+    name: vLogAnalyticsWorkspaceName
+    dailyQuotaGb: 10
+    dataSources: [
+      {
+        eventLogName: 'Application'
+        eventTypes: [
+          {
+            eventType: 'Error'
+          }
+          {
+            eventType: 'Warning'
+          }
+          {
+            eventType: 'Information'
+          }
+        ]
+        kind: 'WindowsEvent'
+        name: 'applicationEvent'
+      }
+      {
+        counterName: '% Processor Time'
+        instanceName: '*'
+        intervalSeconds: 60
+        kind: 'WindowsPerformanceCounter'
+        name: 'windowsPerfCounter1'
+        objectName: 'Processor'
+      }
+      {
+        kind: 'IISLogs'
+        name: 'sampleIISLog1'
+        state: 'OnPremiseEnabled'
+      }
+    ]
+    gallerySolutions: [
+      {
+        name: 'AzureAutomation'
+        product: 'OMSGallery'
+        publisher: 'Microsoft'
+      }
+    ]
     location: paralocation
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+    useResourcePermissions: true
+   
   }
 }
 
