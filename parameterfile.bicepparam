@@ -32,3 +32,13 @@ param paraAspSkuTier = 'Basic'
 param paraBranch = 'master'
 param paraRepositoryUrl = 'https://github.com/Azure-Samples/dotnetcore-docs-hello-world'
 
+// VGW ---------
+
+param VPNGatewayType = 'Vpn'
+param VPNGWName = 'vgw-hub-uksouth-001'
+param  VPNGWSkuName = 'VpnGw2'
+param  VPNGatewayPIPName = 'vgw-pip-uksouth'
+
+
+param AppGatewayName = 'agw-hub-uksouth-001'
+param AppGatewayPIPName  = 'agw-pip-uksouth'

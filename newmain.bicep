@@ -20,9 +20,17 @@ param firewallPolicyName string
 param fwName string
 param recoveryServiceVaultName string
 
+param VPNGatewayType string
+param VPNGWName string
+param  VPNGWSkuName string
+param  VPNGatewayPIPName string
+
+param AppGatewayName string
+param AppGatewayPIPName string
+
 // ---- RandString -------
 
-var RandString=substring(uniqueString(resourceGroup().id),0,3)
+var Rand=substring(uniqueString(resourceGroup().id),0,3)
 
 // VM ---------
 var vmNICIP = '10.20.1.20'
@@ -30,26 +38,26 @@ var vmSize = 'Standard_D2S_v3'
 
 
 // encryptionKV
-var CoreEncryptKeyVaultName = 'kv-encrypt-core-${RandString}'
+var CoreEncryptKeyVaultName = 'kv-encrypt-core-${Rand}'
 var CoreSecVaultName = 'kv-sec-ap-2'
 
 // sql vars
 
-var prodSQLserverName = 'sql-prod-${paralocation}-001-${RandString}'
-var devSQLserverName  = 'sql-dev-${paralocation}-001-${RandString}'
+var prodSQLserverName = 'sql-prod-${paralocation}-001-${Rand}'
+var devSQLserverName  = 'sql-dev-${paralocation}-001-${Rand}'
 var sqladminUsername = 'userabz'
 var sqladminPassword = 'LegendAbz20204!'
 var ProdSQLServerSku = 'Basic'
-var prodSQLDatabaseName = 'sqldb-prod-${paralocation}-001-${RandString}'
-var devSQLDatabaseName = 'sqldb-dev-${paralocation}-001-${RandString}'
+var prodSQLDatabaseName = 'sqldb-prod-${paralocation}-001-${Rand}'
+var devSQLDatabaseName = 'sqldb-dev-${paralocation}-001-${Rand}'
 
 // prod st ------
-var StAccountName = 'stprod001${RandString}'
+var StAccountName = 'stprod001${Rand}'
 var prodStPrivateEndpointName = 'private-endpoint-${StAccountName}'
 
 // Dev St ------
 
-var devStAccountName = 'stdev001${RandString}'
+var devStAccountName = 'stdev001${Rand}'
 var devStPrivateEndPointName = 'private-endpoint-${devStAccountName}'
 //---- Firewall----
 
@@ -62,6 +70,11 @@ var  varSQLPrivateDnsZoneName = 'privatelink${environment().suffixes.sqlServerHo
 var varStPrivateDnsZoneName = 'privatelink.blob.${environment().suffixes.storage}'
 
 var varKvPrivateDnsZoneName = 'privatelink${environment().suffixes.keyvaultDns}'
+
+// VAR APPGW
+
+var vAppGwId = resourceId('Microsoft.Network/applicationGateways',AppGatewayName)
+
 
 // Deafult NSG
 
@@ -263,6 +276,21 @@ module bastionHost 'br/public:avm/res/network/bastion-host:0.1.0' = {
   }
 }
 
+// ---------- VPN GW -------------------
+
+module modVirtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.0' = {
+  name: 'VPNGateway'
+  params: {
+    gatewayType: VPNGatewayType
+    name: VPNGWName
+    skuName: VPNGWSkuName
+    vNetResourceId: HubvirtualNetwork.outputs.resourceId
+    location: paralocation
+    gatewayPipName: VPNGatewayPIPName
+    
+  }
+}
+
 // ----- existing KV with pass and user name
 resource ModcoreSecretVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
   name: CoreSecVaultName
@@ -275,6 +303,7 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.1' = {
     adminUsername:  ModcoreSecretVault.getSecret('VMUsername')
     adminPassword: ModcoreSecretVault.getSecret('VMAdminPassword')
     computerName: 'coreComputer'
+    
     encryptionAtHost:false
     imageReference: {
       publisher: 'MicrosoftWindowsServer'
@@ -311,6 +340,7 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.1' = {
       }
     }
     osType: 'Windows'
+    patchMode: 'AutomaticByOS'
     vmSize: vmSize
     extensionAzureDiskEncryptionConfig: {
       enabled: true
@@ -342,6 +372,18 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.1' = {
   }
 }
 
+// VM INSIGHTS //
+
+module solution 'br/public:avm/res/operations-management/solution:0.1.2' = {
+  name: 'VMInsights'
+  params: {
+    logAnalyticsWorkspaceName: logAnalyticsWorkspace.outputs.name
+    name: 'AzureAutomation'
+    product: 'OMSGallery/VMInsights'
+    publisher: 'Microsoft'
+  }
+}
+
 module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
   name:'encryptionKeyVaultDeployment'
   params:{
@@ -351,11 +393,13 @@ module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
     enableVaultForDeployment:true
     enableVaultForDiskEncryption:true
     enableVaultForTemplateDeployment:true
+    sku:'standard'
+
     networkAcls:{
       defaultAction:'Allow'
       bypass:'AzureServices'
     }
-    sku:'standard'
+    
     privateEndpoints: [
       {
         privateDnsZoneResourceIds: [
@@ -1054,3 +1098,108 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.5.0' = {
 
 
 
+module modapplicationGateway './ResourceModules/modules/network/application-gateway/main.bicep' = {
+  name: 'ApplicationGateway'
+  params: {
+    name: AppGatewayName
+    location: paralocation
+    sku: 'Standard_v2'
+    autoscaleMaxCapacity: 3
+    autoscaleMinCapacity: 1
+    gatewayIPConfigurations: [
+      {
+        name: 'appgw-ip-configuration'
+        properties: {
+          subnet: {
+            id: HubvirtualNetwork.outputs.subnetResourceIds[1]
+          }
+        }
+      }
+    ]
+    frontendIPConfigurations: [
+      {
+        name: 'appgw-frontendIP'
+        properties: {
+          privateIPAllocationMethod: 'Dynamic'
+          publicIPAddress: {
+            id: modAppGatewayPIP.outputs.resourceId
+          }
+        }
+      }
+    ]
+    frontendPorts: [
+      {
+        name: 'port80'
+        properties: {
+          port: 80
+        }
+      }
+    ]
+    backendAddressPools: [
+      {
+        name: 'appServiceBackendPool'
+        properties: {
+          backendAddresses: [
+            {
+              fqdn: appservice.outputs.defaultHostname
+            }
+          ]
+        }
+      }
+    ]
+    backendHttpSettingsCollection: [
+      {
+        name: 'appServiceBackendHttpSetting'
+        properties: {
+          port: 80
+          protocol: 'Http'
+          pickHostNameFromBackendAddress:true
+        }
+      }
+    ]
+    httpListeners: [
+      {
+        name: 'httplisteners'
+        properties: {
+          frontendIPConfiguration: {
+            id: '${vAppGwId}/frontendIPConfigurations/appgw-frontendIP'
+          }
+          frontendPort: {
+            id: '${vAppGwId}/frontendPorts/port80'
+          }
+          protocol: 'Http'
+        }
+      }
+    ]
+    requestRoutingRules: [
+      {
+        name: 'routingrules'
+        properties: {
+          ruleType: 'Basic'
+          priority: 110
+          backendAddressPool: {
+            id: '${vAppGwId}/backendAddressPools/appServiceBackendPool'
+          }
+          backendHttpSettings: {
+            id: '${vAppGwId}/backendHttpSettingsCollection/appServiceBackendHttpSetting'
+          }
+          httpListener: {
+            id: '${vAppGwId}/httpListeners/httplisteners'
+          }
+        }
+      }
+    ]
+    
+  }
+}
+
+module modAppGatewayPIP 'br/public:avm/res/network/public-ip-address:0.2.2' = {
+  name:'AppGatewayPip'
+  params:{
+    name: AppGatewayPIPName
+    location:paralocation
+    skuName: 'Standard'
+    publicIPAllocationMethod:'Static'
+  
+  }
+}
