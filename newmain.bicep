@@ -1,6 +1,5 @@
 param paralocation string = resourceGroup().location
  
-
 param paraAspSkuCapacity int
 param paraAspSkuFamily string
 param paraAspSkuName string
