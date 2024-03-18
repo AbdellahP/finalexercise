@@ -302,6 +302,7 @@ resource ModcoreSecretVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
   name: CoreSecVaultName
 }
 
+
 // Vm inside core ------------
 module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.1' = {
   name:'VirtualMachineCore'
