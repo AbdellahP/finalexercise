@@ -32,7 +32,7 @@ param AppGatewayPIPName string
 
 // ---- RandString -------
 
-var Rand=substring(uniqueString(resourceGroup().id),0,3)
+var Rand=substring(uniqueString(resourceGroup().id),0,4)
 
 // VM ---------
 var vmNICIP = '10.20.1.20'
