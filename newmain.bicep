@@ -61,6 +61,7 @@ var prodStPrivateEndpointName = 'private-endpoint-${StAccountName}'
 
 var devStAccountName = 'stdev001${Rand}'
 var devStPrivateEndPointName = 'private-endpoint-${devStAccountName}'
+
 //---- Firewall----
 
 var AzFwPrivateIP = '10.10.3.4'
@@ -283,18 +284,18 @@ module bastionHost 'br/public:avm/res/network/bastion-host:0.1.1' = {
 
 // ---------- VPN GW -------------------
 
-module modVirtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.1' = {
-  name: 'VPNGateway'
-  params: {
-    gatewayType: VPNGatewayType
-    name: VPNGWName
-    skuName: VPNGWSkuName
-    vNetResourceId: HubvirtualNetwork.outputs.resourceId
-    location: paralocation
-    gatewayPipName: VPNGatewayPIPName
+// module modVirtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.1' = {
+//   name: 'VPNGateway'
+//   params: {
+//     gatewayType: VPNGatewayType
+//     name: VPNGWName
+//     skuName: VPNGWSkuName
+//     vNetResourceId: HubvirtualNetwork.outputs.resourceId
+//     location: paralocation
+//     gatewayPipName: VPNGatewayPIPName
     
-  }
-}
+//   }
+// }
 
 // ----- existing KV with pass and user name
 resource ModcoreSecretVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
@@ -1164,7 +1165,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.6.2' = {
   }
 }
 
-
+// -------- Application Gateway ----------
 
 module modapplicationGateway './ResourceModules/modules/network/application-gateway/main.bicep' = {
   name: 'ApplicationGateway'
