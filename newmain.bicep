@@ -40,10 +40,10 @@ var vmSize = 'Standard_D2S_v3'
 
 
 // encryptionKV
-var CoreEncryptKeyVaultName = 'kv-encrypt-core-${Rand}'
+var CoreEncryptKeyVaultName = 'kv-encrypt-core-001-${Rand}'
 var CoreSecVaultName = 'kv-sec-ap-1'
 
-// sql vars
+// sql var
 
 var prodSQLserverName = 'sql-prod-${paralocation}-001-${Rand}'
 var devSQLserverName  = 'sql-dev-${paralocation}-001-${Rand}'
@@ -573,11 +573,11 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
         name: 'windowsPerfCounter1'
         objectName: 'Processor'
       }
-      {
-        kind: 'IISLogs'
-        name: 'sampleIISLog1'
-        state: 'OnPremiseEnabled'
-      }
+      // {
+      //   kind: 'IISLogs'
+      //   name: 'sampleIISLog1'
+      //   state: 'OnPremiseEnabled'
+      // }
     ]
     gallerySolutions: [
       {
