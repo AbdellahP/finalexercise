@@ -493,24 +493,24 @@ module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
     enableVaultForTemplateDeployment:true
     enablePurgeProtection: false
 
-    accessPolicies: [
-      {
-        objectId: 'c07cf461-ba5a-4aac-930f-b2346f8fdd3d'
-        tenantId: 'd4003661-f87e-4237-9a9b-8b9c31ba2467'
-        permissions: {
-          keys: [
-            'get'
-            'list'
-            'backup'
-          ]
-          secrets: [
-            'get'
-            'list'
-            'backup'
-          ]
-        }
-      }
-    ]
+    // accessPolicies: [
+    //   {
+    //     objectId: 'c07cf461-ba5a-4aac-930f-b2346f8fdd3d'
+    //     tenantId: 'd4003661-f87e-4237-9a9b-8b9c31ba2467'
+    //     permissions: {
+    //       keys: [
+    //         'get'
+    //         'list'
+    //         'backup'
+    //       ]
+    //       secrets: [
+    //         'get'
+    //         'list'
+    //         'backup'
+    //       ]
+    //     }
+    //   }
+    // ]
    
 
     networkAcls:{
