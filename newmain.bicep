@@ -41,7 +41,7 @@ var vmSize = 'Standard_D2S_v3'
 
 // encryptionKV
 var CoreEncryptKeyVaultName = 'kv-encrypt-core-${Rand}'
-var CoreSecVaultName = 'kv-sec-ap-2'
+var CoreSecVaultName = 'kv-sec-ap-1'
 
 // sql vars
 
@@ -319,6 +319,8 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.1' = {
     backupPolicyName: 'DefaultPolicy'
     backupVaultName: recoveryServiceVaults.outputs.name
     backupVaultResourceGroup: recoveryServiceVaults.outputs.resourceGroupName
+    enableAutomaticUpdates: true
+    
     nicConfigurations: [
       {
         deleteOption: 'Delete'
@@ -391,12 +393,33 @@ module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
   name:'encryptionKeyVaultDeployment'
   params:{
     name: CoreEncryptKeyVaultName
+    sku:'standard'
     location: paralocation
     enableRbacAuthorization: false
     enableVaultForDeployment:true
     enableVaultForDiskEncryption:true
     enableVaultForTemplateDeployment:true
-    sku:'standard'
+    enablePurgeProtection: false
+
+    accessPolicies: [
+      {
+        objectId: 'c07cf461-ba5a-4aac-930f-b2346f8fdd3d'
+        tenantId: 'd4003661-f87e-4237-9a9b-8b9c31ba2467'
+        permissions: {
+          keys: [
+            'get'
+            'list'
+            'backup'
+          ]
+          secrets: [
+            'get'
+            'list'
+            'backup'
+          ]
+        }
+      }
+    ]
+   
 
     networkAcls:{
       defaultAction:'Allow'
