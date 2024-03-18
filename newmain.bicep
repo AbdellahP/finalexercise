@@ -867,6 +867,7 @@ module applicationInsights 'br/public:avm/res/insights/component:0.1.2' = {
 
 // ----------------------- PROD SPOKE ----------------
 
+
 // ---------- Prod App Service Plan ----
 
 module AppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
