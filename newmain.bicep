@@ -138,6 +138,7 @@ module HubvirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0' = {
   }
 }
 
+
 //Core Vnet
 module CorevirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0' = {
   name: 'Core-${paralocation}-001' 
