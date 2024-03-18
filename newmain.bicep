@@ -512,7 +512,6 @@ module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
     //   }
     // ]
    
-
     networkAcls:{
       defaultAction:'Allow'
       bypass:'AzureServices'
