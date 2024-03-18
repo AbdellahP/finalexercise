@@ -78,21 +78,9 @@ var varKvPrivateDnsZoneName = 'privatelink${environment().suffixes.keyvaultDns}'
 var vAppGwId = resourceId('Microsoft.Network/applicationGateways',AppGatewayName)
 
 
-// Deafult NSG
-
-module networkSecurityGroup 'br/public:avm/res/network/network-security-group:0.1.2' = {
-  name: 'DeafultNSG'
-  params: {
-    // Required parameters
-    name: 'deafultnsg'
-    // Non-required parameters
-    location: paralocation
-  }
-}
-
 // Hub Vnet
 
-module HubvirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0' = {
+module HubvirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1' = {
   name: 'Hub-${paralocation}-001' 
   params: {
     // Required parameters
@@ -140,7 +128,7 @@ module HubvirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0' = {
 
 
 //Core Vnet
-module CorevirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0' = {
+module CorevirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1' = {
   name: 'Core-${paralocation}-001' 
   params: {
     // Required parameters
@@ -168,7 +156,7 @@ module CorevirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0' = {
 }
 
 // DevVnet
-module devSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0' = {
+module devSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1' = {
   name: 'dev-${paralocation}-001' 
   params: {
     // Required parameters
@@ -212,7 +200,7 @@ module devSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0' 
 }
 
 // Prod Vnet
-module ProdSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0' = {
+module ProdSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1' = {
   name: 'prod-${paralocation}-001' 
   params: {
     // Required parameters
@@ -255,9 +243,23 @@ module ProdSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.0'
   }
 }
 
+
+
+//-------------- Deafult NSG --------------
+
+module networkSecurityGroup 'br/public:avm/res/network/network-security-group:0.1.2' = {
+  name: 'DeafultNSG'
+  params: {
+    // Required parameters
+    name: 'deafultnsg'
+    // Non-required parameters
+    location: paralocation
+  }
+}
+
 // Bastion host -------------
 
-module bastionHost 'br/public:avm/res/network/bastion-host:0.1.0' = {
+module bastionHost 'br/public:avm/res/network/bastion-host:0.1.1' = {
   name: 'bas-hub-${paralocation}-001'
   params: {
     // Required parameters
@@ -281,7 +283,7 @@ module bastionHost 'br/public:avm/res/network/bastion-host:0.1.0' = {
 
 // ---------- VPN GW -------------------
 
-module modVirtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.0' = {
+module modVirtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.1' = {
   name: 'VPNGateway'
   params: {
     gatewayType: VPNGatewayType
@@ -389,57 +391,6 @@ module solution 'br/public:avm/res/operations-management/solution:0.1.2' = {
   }
 }
 
-module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
-  name:'encryptionKeyVaultDeployment'
-  params:{
-    name: CoreEncryptKeyVaultName
-    sku:'standard'
-    location: paralocation
-    enableRbacAuthorization: false
-    enableVaultForDeployment:true
-    enableVaultForDiskEncryption:true
-    enableVaultForTemplateDeployment:true
-    enablePurgeProtection: false
-
-    accessPolicies: [
-      {
-        objectId: 'c07cf461-ba5a-4aac-930f-b2346f8fdd3d'
-        tenantId: 'd4003661-f87e-4237-9a9b-8b9c31ba2467'
-        permissions: {
-          keys: [
-            'get'
-            'list'
-            'backup'
-          ]
-          secrets: [
-            'get'
-            'list'
-            'backup'
-          ]
-        }
-      }
-    ]
-   
-
-    networkAcls:{
-      defaultAction:'Allow'
-      bypass:'AzureServices'
-    }
-    
-    privateEndpoints: [
-      {
-        privateDnsZoneResourceIds: [
-          KVprivateDnsZone.outputs.resourceId
-        ]
-        service: 'vault'
-        subnetResourceId:  CorevirtualNetwork.outputs.subnetResourceIds[1]
-        
-      }
-    ]
-  }
-}
-
-
 
 // Datacollection Rules
 
@@ -526,6 +477,56 @@ module DCRassociation 'ModDCRassociation.bicep' = {
   params:{
     vmName: vmName
     DCRId: MSVMI_PerfandDa_hub_spoke.outputs.resourceId
+  }
+}
+
+module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
+  name:'encryptionKeyVaultDeployment'
+  params:{
+    name: CoreEncryptKeyVaultName
+    sku:'standard'
+    location: paralocation
+    enableRbacAuthorization: false
+    enableVaultForDeployment:true
+    enableVaultForDiskEncryption:true
+    enableVaultForTemplateDeployment:true
+    enablePurgeProtection: false
+
+    accessPolicies: [
+      {
+        objectId: 'c07cf461-ba5a-4aac-930f-b2346f8fdd3d'
+        tenantId: 'd4003661-f87e-4237-9a9b-8b9c31ba2467'
+        permissions: {
+          keys: [
+            'get'
+            'list'
+            'backup'
+          ]
+          secrets: [
+            'get'
+            'list'
+            'backup'
+          ]
+        }
+      }
+    ]
+   
+
+    networkAcls:{
+      defaultAction:'Allow'
+      bypass:'AzureServices'
+    }
+    
+    privateEndpoints: [
+      {
+        privateDnsZoneResourceIds: [
+          KVprivateDnsZone.outputs.resourceId
+        ]
+        service: 'vault'
+        subnetResourceId:  CorevirtualNetwork.outputs.subnetResourceIds[1]
+        
+      }
+    ]
   }
 }
 //-----------------RSV ---------------------------
@@ -993,7 +994,7 @@ module sqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
 
 // ---------- Prod Storage ACCOUNT ----
 
-module prodstorageAccount 'br/public:avm/res/storage/storage-account:0.5.0' = {
+module prodstorageAccount 'br/public:avm/res/storage/storage-account:0.6.2' = {
   name: 'prodstorageAccountDeployment'
   params: {
     name: StAccountName
@@ -1142,7 +1143,7 @@ module devsqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
 
 // ---------- Dev Storage ACCOUNT ----
 
-module storageAccount 'br/public:avm/res/storage/storage-account:0.5.0' = {
+module storageAccount 'br/public:avm/res/storage/storage-account:0.6.2' = {
   name: 'storageAccountDeployment'
   params: {
     name: devStAccountName
