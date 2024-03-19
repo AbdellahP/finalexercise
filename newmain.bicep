@@ -1098,18 +1098,18 @@ module devappservice 'br/public:avm/res/web/site:0.2.0' = {
 }
 
 
-// module DevSourceControl 'ModSourceControl.bicep' = {
-//   dependsOn: [
-//     devappservice
-//   ]
-//   name: 'devsourceControl'
-//   params: {
-//     srcName: 'as-dev-001-ap/web'
-//     paraRepositoryUrl: paraRepositoryUrl
-//     paraBranch: paraBranch
-//     paraisManualIntegration: true
-//   }
-// }
+module DevSourceControl 'ModSourceControl.bicep' = {
+  dependsOn: [
+    devappservice
+  ]
+  name: 'devsourceControl'
+  params: {
+    srcName: 'as-dev-001-ap/web'
+    paraRepositoryUrl: paraRepositoryUrl
+    paraBranch: paraBranch
+    paraisManualIntegration: true
+  }
+}
 
 // --------- Dev SQL Server -------------
 

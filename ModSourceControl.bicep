@@ -10,5 +10,8 @@ resource srcControls 'Microsoft.Web/sites/sourcecontrols@2022-03-01' = {
     repoUrl: paraRepositoryUrl
     branch: paraBranch
     isManualIntegration: paraisManualIntegration 
+    deploymentRollbackEnabled: false
+    isGitHubAction:false
+    isMercurial: false
   }
 }
