@@ -1218,7 +1218,7 @@ module modapplicationGateway './ResourceModules/modules/network/application-gate
         properties: {
           backendAddresses: [
             {
-              fqdn: appservice.outputs.defaultHostname
+              fqdn: prodappservice.outputs.defaultHostname
             }
           ]
         }
