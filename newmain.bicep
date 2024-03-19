@@ -78,6 +78,7 @@ var varKvPrivateDnsZoneName = 'privatelink${environment().suffixes.keyvaultDns}'
 
 var vAppGwId = resourceId('Microsoft.Network/applicationGateways',AppGatewayName)
 
+var prodOrDev =[0,1]
 
 // Hub Vnet
 
@@ -870,7 +871,7 @@ module applicationInsights 'br/public:avm/res/insights/component:0.1.2' = {
 
 // ---------- Prod App Service Plan ----
 
-module AppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
+module ProdAppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
   name: 'AppServicePlan'
   params: {
     // Required parameters
@@ -896,7 +897,7 @@ module appservice 'br/public:avm/res/web/site:0.2.0' = {
     // Required parameters
     kind: 'app'
     name: 'as-prod-001-ap'
-    serverFarmResourceId: AppServicePlan.outputs.resourceId
+    serverFarmResourceId: ProdAppServicePlan.outputs.resourceId
     diagnosticSettings: [
       {
         metricCategories: [
@@ -948,19 +949,25 @@ module appservice 'br/public:avm/res/web/site:0.2.0' = {
 
 // --------- Source Control ---------
 
-
-module SourceControl 'ModSourceControl.bicep' = {
-  dependsOn: [
-    appservice
-  ]
-  name: 'sourceControl'
+module modsrcctrl 'ModSourceControl.bicep' =[for spoke in prodOrDev: {
+  name: '${(spoke==0) ? 'dev' : 'prod'}-sourceControl' 
   params: {
-    srcName: 'as-prod-001-ap/web'
-    paraRepositoryUrl: paraRepositoryUrl
-    paraBranch: paraBranch
-    paraisManualIntegration: true
+    paramsrcctrlname: 'web'
+    paramAppServiceName: (spoke==0) ? ProdAppServicePlan.outputs.name : DevAppServicePlan.outputs.name
   }
-}
+}]
+// module SourceControl 'ModSourceControl.bicep' = {
+//   dependsOn: [
+//     appservice
+//   ]
+//   name: 'sourceControl'
+//   params: {
+//     srcName: 'as-prod-001-ap/web'
+//     paraRepositoryUrl: paraRepositoryUrl
+//     paraBranch: paraBranch
+//     paraisManualIntegration: true
+//   }
+// }
 
 // --------- Prod SQL Server -------------
 
@@ -1098,18 +1105,18 @@ module devappservice 'br/public:avm/res/web/site:0.2.0' = {
 }
 
 
-module DevSourceControl 'ModSourceControl.bicep' = {
-  dependsOn: [
-    devappservice
-  ]
-  name: 'devsourceControl'
-  params: {
-    srcName: 'as-dev-001-ap/web'
-    paraRepositoryUrl: paraRepositoryUrl
-    paraBranch: paraBranch
-    paraisManualIntegration: true
-  }
-}
+// module DevSourceControl 'ModSourceControl.bicep' = {
+//   dependsOn: [
+//     devappservice
+//   ]
+//   name: 'devsourceControl'
+//   params: {
+//     srcName: 'as-dev-001-ap/web'
+//     paraRepositoryUrl: paraRepositoryUrl
+//     paraBranch: paraBranch
+//     paraisManualIntegration: true
+//   }
+// }
 
 // --------- Dev SQL Server -------------
 
