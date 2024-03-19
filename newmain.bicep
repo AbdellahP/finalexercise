@@ -459,6 +459,7 @@ module MSVMI_PerfandDa_hub_spoke 'br/public:avm/res/insights/data-collection-rul
   }
 }
 
+
 module dataCollectionEndpoint 'br/public:avm/res/insights/data-collection-endpoint:0.1.2' = {
   name: 'DataCollectionEndpoint'
   params: {
@@ -892,7 +893,7 @@ module ProdAppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
 // ---------- Prod App Service ------
 
 module prodappservice 'br/public:avm/res/web/site:0.2.0' = {
-  name: 'AppService'
+  name: 'ProdAppService'
   params: {
     // Required parameters
     kind: 'app'
