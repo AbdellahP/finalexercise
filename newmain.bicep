@@ -891,7 +891,7 @@ module ProdAppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
 
 // ---------- Prod App Service ------
 
-module appservice 'br/public:avm/res/web/site:0.2.0' = {
+module prodappservice 'br/public:avm/res/web/site:0.2.0' = {
   name: 'AppService'
   params: {
     // Required parameters
@@ -953,7 +953,7 @@ module modsrcctrl 'ModSourceControl.bicep' =[for spoke in prodOrDev: {
   name: '${(spoke==0) ? 'dev' : 'prod'}-sourceControl' 
   params: {
     paramsrcctrlname: 'web'
-    paramAppServiceName: (spoke==0) ? ProdAppServicePlan.outputs.name : DevAppServicePlan.outputs.name
+    paramAppServiceName: (spoke==0) ? prodappservice.outputs.name : devappservice.outputs.name
   }
 }]
 // module SourceControl 'ModSourceControl.bicep' = {
