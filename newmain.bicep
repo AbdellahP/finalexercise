@@ -1270,6 +1270,7 @@ module modapplicationGateway './ResourceModules/modules/network/application-gate
   }
 }
 
+
 module modAppGatewayPIP 'br/public:avm/res/network/public-ip-address:0.2.2' = {
   name:'AppGatewayPip'
   params:{
