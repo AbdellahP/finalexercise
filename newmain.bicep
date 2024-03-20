@@ -551,6 +551,7 @@ module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
   }
 }
 //-----------------RSV ---------------------------
+
 module recoveryServiceVaults './ResourceModules/modules/recovery-services/vault/main.bicep' ={
   
   name:recoveryServiceVaultName
