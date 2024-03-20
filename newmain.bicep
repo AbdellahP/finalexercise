@@ -78,7 +78,7 @@ var varKvPrivateDnsZoneName = 'privatelink${environment().suffixes.keyvaultDns}'
 
 var vAppGwId = resourceId('Microsoft.Network/applicationGateways',AppGatewayName)
 
-var prodOrDev =[0,1]
+var prodOrDev = [0,1] // 
 
 // Hub Vnet
 
@@ -550,6 +550,7 @@ module encryptionKeyVault 'br/public:avm/res/key-vault/vault:0.3.4' = {
     ]
   }
 }
+
 //-----------------RSV ---------------------------
 
 module recoveryServiceVaults './ResourceModules/modules/recovery-services/vault/main.bicep' ={
