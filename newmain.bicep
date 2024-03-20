@@ -145,10 +145,15 @@ module CorevirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1' = {
       {
         addressPrefix: '10.20.1.0/24'
         name: 'VMSubnet'
+        networkSecurityGroupResourceId: networkSecurityGroup.outputs.resourceId
+        routeTableResourceId: routeTable.outputs.resourceId
       }
       {
+
         addressPrefix: '10.20.2.0/24'
         name: 'KvSubnet'
+        networkSecurityGroupResourceId: networkSecurityGroup.outputs.resourceId
+        routeTableResourceId: routeTable.outputs.resourceId
         //networkSecurityGroupResourceId: '<networkSecurityGroupResourceId>'
       }
      
@@ -184,16 +189,23 @@ module devSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1' 
       {
         addressPrefix: '10.30.1.0/24'
         name: 'AppSubnet'
+        networkSecurityGroupResourceId: networkSecurityGroup.outputs.resourceId
+        routeTableResourceId: routeTable.outputs.resourceId
+        
       }
       {
         addressPrefix: '10.30.2.0/24'
         name: 'SqlSubnet'
+        networkSecurityGroupResourceId: networkSecurityGroup.outputs.resourceId
+        routeTableResourceId: routeTable.outputs.resourceId
         //networkSecurityGroupResourceId: '<networkSecurityGroupResourceId>'
       }
 
       {
         addressPrefix: '10.30.3.0/24'
         name: 'StSubnet'
+        networkSecurityGroupResourceId: networkSecurityGroup.outputs.resourceId
+        routeTableResourceId: routeTable.outputs.resourceId
       }
      
     ]
@@ -228,16 +240,22 @@ module ProdSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1'
       {
         addressPrefix: '10.31.1.0/24'
         name: 'AppSubnet'
+        networkSecurityGroupResourceId: networkSecurityGroup.outputs.resourceId
+        routeTableResourceId: routeTable.outputs.resourceId
       }
       {
         addressPrefix: '10.31.2.0/24'
         name: 'SqlSubnet'
+        networkSecurityGroupResourceId: networkSecurityGroup.outputs.resourceId
+        routeTableResourceId: routeTable.outputs.resourceId
         //networkSecurityGroupResourceId: '<networkSecurityGroupResourceId>'
       }
 
       {
         addressPrefix: '10.31.3.0/24'
         name: 'StSubnet'
+        networkSecurityGroupResourceId: networkSecurityGroup.outputs.resourceId
+        routeTableResourceId: routeTable.outputs.resourceId
       }
      
     ]
