@@ -564,7 +564,6 @@ module recoveryServiceVaults './ResourceModules/modules/recovery-services/vault/
   }
 }
 
-
 module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.3.1' = {
   name: 'LogAnalyticsWorkspace'
   params: {
