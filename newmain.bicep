@@ -895,7 +895,7 @@ module ProdAppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
   name: 'AppServicePlan'
   params: {
     // Required parameters
-    name: 'asp'
+    name: 'asp-prod-${paralocation}-001-${Rand}'
     sku: {
       capacity: paraAspSkuCapacity
       family: paraAspSkuFamily
@@ -973,7 +973,7 @@ module modsrcctrl 'ModSourceControl.bicep' =[for spoke in prodOrDev: {
   name: '${(spoke==0) ? 'dev' : 'prod'}-sourceControl' 
   params: {
     paramsrcctrlname: 'web'
-    paramAppServiceName: (spoke==0) ? prodappservice.outputs.name : devappservice.outputs.name
+    paramAppServiceName: (spoke==0) ?  devappservice.outputs.name : prodappservice.outputs.name
   }
 }]
 // module SourceControl 'ModSourceControl.bicep' = {
@@ -1052,7 +1052,7 @@ module DevAppServicePlan 'br/public:avm/res/web/serverfarm:0.1.0' = {
   name: 'devAppServicePlan'
   params: {
     // Required parameters
-    name: 'asp'
+    name: 'asp-dev-${paralocation}-001-${Rand}'
     sku: {
       capacity: paraAspSkuCapacity
       family: paraAspSkuFamily
