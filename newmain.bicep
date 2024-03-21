@@ -95,7 +95,7 @@ module HubvirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1' = {
     peerings: [
       {
         allowForwardedTraffic: true
-        allowGatewayTransit: false
+        allowGatewayTransit: true
         allowVirtualNetworkAccess: true
         remotePeeringAllowForwardedTraffic: true
         remotePeeringAllowVirtualNetworkAccess: true
@@ -175,7 +175,7 @@ module devSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1' 
     peerings: [
       {
         allowForwardedTraffic: true
-        allowGatewayTransit: false
+        allowGatewayTransit: true
         allowVirtualNetworkAccess: true
         remotePeeringAllowForwardedTraffic: true
         remotePeeringAllowVirtualNetworkAccess: true
@@ -226,7 +226,7 @@ module ProdSpokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.1'
     peerings: [
       {
         allowForwardedTraffic: true
-        allowGatewayTransit: false
+        allowGatewayTransit: true
         allowVirtualNetworkAccess: true
         remotePeeringAllowForwardedTraffic: true
         remotePeeringAllowVirtualNetworkAccess: true
@@ -989,7 +989,7 @@ module modsrcctrl 'ModSourceControl.bicep' =[for spoke in prodOrDev: {
 //   }
 // }
 
-// --------- Prod SQL Server -------------
+// --------- Prod SQL Server --------------
 
 module sqlServer 'br/public:avm/res/sql/server:0.1.5' =  {
   name:'prodSQLServer'
