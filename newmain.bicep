@@ -271,7 +271,7 @@ module networkSecurityGroup 'br/public:avm/res/network/network-security-group:0.
   name: 'DeafultNSG'
   params: {
     // Required parameters
-    name: 'deafultnsg'
+    name: 'nsg-ap-001'
     // Non-required parameters
     location: paralocation
   }
@@ -280,10 +280,10 @@ module networkSecurityGroup 'br/public:avm/res/network/network-security-group:0.
 // Bastion host -------------
 
 module bastionHost 'br/public:avm/res/network/bastion-host:0.1.1' = {
-  name: 'bas-hub-${paralocation}-001'
+  name: 'bas-hub'
   params: {
     // Required parameters
-    name: 'bastion-hub'
+    name: 'bas-hub-${paralocation}-001'
     vNetId: HubvirtualNetwork.outputs.resourceId
     // Non-required parameters
     location: paralocation
@@ -303,18 +303,18 @@ module bastionHost 'br/public:avm/res/network/bastion-host:0.1.1' = {
 
 // ---------- VPN GW -------------------
 
-// module modVirtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.1' = {
-//   name: 'VPNGateway'
-//   params: {
-//     gatewayType: VPNGatewayType
-//     name: VPNGWName
-//     skuName: VPNGWSkuName
-//     vNetResourceId: HubvirtualNetwork.outputs.resourceId
-//     location: paralocation
-//     gatewayPipName: VPNGatewayPIPName
+module modVirtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.1' = {
+  name: 'VPNGateway'
+  params: {
+    gatewayType: VPNGatewayType
+    name: VPNGWName
+    skuName: VPNGWSkuName
+    vNetResourceId: HubvirtualNetwork.outputs.resourceId
+    location: paralocation
+    gatewayPipName: VPNGatewayPIPName
     
-//   }
-// }
+  }
+}
 
 // ----- existing KV with pass and user name
 resource ModcoreSecretVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
