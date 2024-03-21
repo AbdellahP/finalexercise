@@ -304,7 +304,7 @@ module bastionHost 'br/public:avm/res/network/bastion-host:0.1.1' = {
 // ---------- VPN GW -------------------
 
 module modVirtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.1' = {
-  name: 'VPNGateway'
+  name: 'hubgatewaydepolyment'
   params: {
     gatewayType: VPNGatewayType
     name: VPNGWName
@@ -315,6 +315,7 @@ module modVirtualNetworkGateway 'br/public:avm/res/network/virtual-network-gatew
     
   }
 }
+
 
 // ----- existing KV with pass and user name
 resource ModcoreSecretVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
